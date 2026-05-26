@@ -1,7 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getUsuario } from '@/lib/auth'
+import { notificarColaborador } from '@/lib/notificar'
 import { ESTADOS, type EstadoCaso } from '@/types/caso'
+
+const ESTADOS_NOTIFICAN: EstadoCaso[] = ['en_gestion', 'cerrado', 'escalado']
 
 interface Body {
   estado?: EstadoCaso
@@ -32,7 +35,9 @@ export async function PATCH(
 
   const { data: casoExistente, error: errorFetch } = await supabase
     .from('casos')
-    .select('id, estado, responsable, observaciones')
+    .select(
+      'id, estado, responsable, observaciones, colaborador_numero, colaborador_nombre'
+    )
     .eq('id', params.id)
     .maybeSingle()
 
@@ -101,6 +106,18 @@ export async function PATCH(
     detalle,
     actor: usuario.nombre,
   })
+
+  const huboCambioEstado =
+    !!body.estado && body.estado !== casoExistente.estado
+
+  if (huboCambioEstado && ESTADOS_NOTIFICAN.includes(body.estado!)) {
+    // notificarColaborador nunca lanza: si falla, loguea y no bloquea la respuesta.
+    await notificarColaborador({
+      numero: casoExistente.colaborador_numero,
+      nombre: casoExistente.colaborador_nombre,
+      estado: body.estado!,
+    })
+  }
 
   return NextResponse.json({ ok: true, cambios })
 }
