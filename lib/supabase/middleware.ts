@@ -2,7 +2,7 @@ import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import { getUsuario } from '@/lib/auth'
 
-const PUBLIC_PATHS = ['/login', '/auth']
+const PUBLIC_PATHS = ['/login', '/auth', '/privacidad']
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request })
