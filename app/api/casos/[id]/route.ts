@@ -84,7 +84,7 @@ export async function PATCH(
   }
 
   // 2. Registrar el evento de cambio de estado.
-  await supabase.from('eventos').insert({
+  const { error: errorEvento } = await supabase.from('eventos').insert({
     caso_id: params.id,
     tipo: 'cambio_estado',
     detalle: `Estado: ${estadoAnterior} → ${nuevoEstado} | ${observacion}`,
@@ -92,16 +92,32 @@ export async function PATCH(
     fecha: ahora,
   })
 
+  if (errorEvento) {
+    console.error('[casos] Error insertando evento cambio_estado:', errorEvento)
+    return NextResponse.json({ error: errorEvento.message }, { status: 500 })
+  }
+
   // 3. Notificación al colaborador: por ahora solo se deja registrada como
   //    pendiente. La integración real con WhatsApp se construye aparte.
   if (body.notificar_colaborador) {
-    await supabase.from('eventos').insert({
+    const { error: errorPendiente } = await supabase.from('eventos').insert({
       caso_id: params.id,
       tipo: 'notificacion_pendiente',
       detalle: 'Pendiente notificar colaborador por WhatsApp',
       actor: user.email,
       fecha: ahora,
     })
+
+    if (errorPendiente) {
+      console.error(
+        '[casos] Error insertando evento notificacion_pendiente:',
+        errorPendiente
+      )
+      return NextResponse.json(
+        { error: errorPendiente.message },
+        { status: 500 }
+      )
+    }
   }
 
   // 4. Escalamiento: enviar correo a admins y supervisores.
