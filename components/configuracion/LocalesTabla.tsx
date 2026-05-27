@@ -1,34 +1,95 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
+
+const CLIENTE_ID = 'grupobaco'
 
 interface Local {
   id: string
   codigo: string
   nombre: string
+  orden: number | null
 }
 
-const INICIALES: Local[] = [
-  { id: '1', codigo: 'CM', nombre: 'Casa Matriz' },
-  { id: '2', codigo: 'L01', nombre: 'Local Centro' },
-  { id: '3', codigo: 'L02', nombre: 'Local Norte' },
-]
-
 export default function LocalesTabla() {
-  const [filas, setFilas] = useState<Local[]>(INICIALES)
+  const supabase = createClient()
+
+  const [filas, setFilas] = useState<Local[]>([])
+  const [cargando, setCargando] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
   const [codigo, setCodigo] = useState('')
   const [nombre, setNombre] = useState('')
+  const [guardando, setGuardando] = useState(false)
 
-  function eliminar(id: string) {
+  useEffect(() => {
+    let activo = true
+    async function cargar() {
+      setCargando(true)
+      setError(null)
+      const { data, error: err } = await supabase
+        .from('locales')
+        .select('id, codigo, nombre, orden')
+        .eq('cliente_id', CLIENTE_ID)
+        .eq('activo', true)
+        .order('orden', { ascending: true })
+
+      if (!activo) return
+      if (err) {
+        setError(`No se pudieron cargar los locales: ${err.message}`)
+      } else {
+        setFilas((data ?? []) as Local[])
+      }
+      setCargando(false)
+    }
+    cargar()
+    return () => {
+      activo = false
+    }
+  }, [supabase])
+
+  async function eliminar(id: string) {
+    setError(null)
+    const { error: err } = await supabase
+      .from('locales')
+      .update({ activo: false })
+      .eq('id', id)
+
+    if (err) {
+      setError(`No se pudo eliminar el local: ${err.message}`)
+      return
+    }
     setFilas((prev) => prev.filter((f) => f.id !== id))
   }
 
-  function agregar() {
+  async function agregar() {
     if (!codigo.trim() || !nombre.trim()) return
-    setFilas((prev) => [
-      ...prev,
-      { id: crypto.randomUUID(), codigo: codigo.trim(), nombre: nombre.trim() },
-    ])
+    setGuardando(true)
+    setError(null)
+
+    const maxOrden = filas.reduce((m, f) => Math.max(m, f.orden ?? 0), 0)
+
+    const { data, error: err } = await supabase
+      .from('locales')
+      .insert({
+        cliente_id: CLIENTE_ID,
+        codigo: codigo.trim(),
+        nombre: nombre.trim(),
+        orden: maxOrden + 1,
+        activo: true,
+      })
+      .select('id, codigo, nombre, orden')
+      .single()
+
+    setGuardando(false)
+
+    if (err) {
+      setError(`No se pudo agregar el local: ${err.message}`)
+      return
+    }
+
+    setFilas((prev) => [...prev, data as Local])
     setCodigo('')
     setNombre('')
   }
@@ -38,9 +99,17 @@ export default function LocalesTabla() {
       <div>
         <h2 className="text-lg font-semibold text-gray-900">Locales</h2>
         <p className="text-sm text-gray-500">
-          {filas.length} local{filas.length === 1 ? '' : 'es'}
+          {cargando
+            ? 'Cargando…'
+            : `${filas.length} local${filas.length === 1 ? '' : 'es'}`}
         </p>
       </div>
+
+      {error && (
+        <div className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">
+          {error}
+        </div>
+      )}
 
       <div className="bg-white border border-gray-200 p-4 flex items-end gap-3">
         <div className="flex flex-col w-32">
@@ -67,9 +136,10 @@ export default function LocalesTabla() {
         </div>
         <button
           onClick={agregar}
-          className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 transition-colors"
+          disabled={guardando || cargando}
+          className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-4 py-2 transition-colors"
         >
-          Agregar local
+          {guardando ? 'Guardando…' : 'Agregar local'}
         </button>
       </div>
 
@@ -84,7 +154,13 @@ export default function LocalesTabla() {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {filas.length === 0 ? (
+            {cargando ? (
+              <tr>
+                <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
+                  Cargando locales…
+                </td>
+              </tr>
+            ) : filas.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
                   No hay locales.
