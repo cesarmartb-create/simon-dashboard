@@ -7,117 +7,139 @@ import { ESTADOS, ESTADO_LABEL, type EstadoCaso } from '@/types/caso'
 interface Props {
   casoId: string
   estadoActual: EstadoCaso
-  observacionesActual: string | null
 }
 
-export default function AccionesCaso({
-  casoId,
-  estadoActual,
-  observacionesActual,
-}: Props) {
+export default function AccionesCaso({ casoId, estadoActual }: Props) {
   const router = useRouter()
+  const [abierto, setAbierto] = useState(false)
   const [estado, setEstado] = useState<EstadoCaso>(estadoActual)
-  const [observaciones, setObservaciones] = useState(observacionesActual ?? '')
-  const [detalle, setDetalle] = useState('')
+  const [observacion, setObservacion] = useState('')
   const [guardando, setGuardando] = useState(false)
-  const [mensaje, setMensaje] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
 
-  async function handleGuardar() {
-    setGuardando(true)
-    setMensaje(null)
+  function abrir() {
+    setEstado(estadoActual)
+    setObservacion('')
     setError(null)
+    setAbierto(true)
+  }
+
+  function cerrar() {
+    if (guardando) return
+    setAbierto(false)
+  }
+
+  async function handleGuardar() {
+    if (!observacion.trim()) return
+    setGuardando(true)
+    setError(null)
+
+    const body: Record<string, unknown> = {
+      estado,
+      observacion: observacion.trim(),
+      estado_anterior: estadoActual,
+    }
+    if (estado === 'esperando_empleado') body.notificar_colaborador = true
+    if (estado === 'escalado') body.notificar_escalado = true
 
     const res = await fetch(`/api/casos/${casoId}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ estado, observaciones, detalle }),
+      body: JSON.stringify(body),
     })
 
     setGuardando(false)
 
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      setError(data.error ?? 'No se pudo guardar el caso.')
+      setError(data.error ?? 'No se pudo guardar el cambio.')
       return
     }
 
-    setMensaje('Caso actualizado correctamente.')
-    setDetalle('')
+    setAbierto(false)
     router.refresh()
   }
-
-  const cambioEstado = estado !== estadoActual
-  const cambioObs = observaciones !== (observacionesActual ?? '')
-  const hayCambios = cambioEstado || cambioObs
 
   return (
     <div className="bg-white border border-gray-200 p-5 space-y-4">
       <div className="text-sm font-semibold text-gray-900">Acciones</div>
 
       <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">
-          Cambiar estado
-        </label>
-        <select
-          value={estado}
-          onChange={(e) => setEstado(e.target.value as EstadoCaso)}
-          className="w-full px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
-        >
-          {ESTADOS.map((e) => (
-            <option key={e} value={e}>
-              {ESTADO_LABEL[e]}
-            </option>
-          ))}
-        </select>
+        <div className="text-xs text-gray-500 mb-1">Estado actual</div>
+        <div className="text-sm font-medium text-gray-900">
+          {ESTADO_LABEL[estadoActual] ?? estadoActual}
+        </div>
       </div>
-
-      <div>
-        <label className="block text-xs font-medium text-gray-700 mb-1">
-          Observaciones
-        </label>
-        <textarea
-          value={observaciones}
-          onChange={(e) => setObservaciones(e.target.value)}
-          rows={4}
-          className="w-full px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent resize-none"
-          placeholder="Notas internas sobre el caso…"
-        />
-      </div>
-
-      {cambioEstado && (
-        <div>
-          <label className="block text-xs font-medium text-gray-700 mb-1">
-            Detalle del cambio (opcional)
-          </label>
-          <input
-            type="text"
-            value={detalle}
-            onChange={(e) => setDetalle(e.target.value)}
-            placeholder="Por qué cambias el estado…"
-            className="w-full px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
-          />
-        </div>
-      )}
-
-      {error && (
-        <div className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">
-          {error}
-        </div>
-      )}
-      {mensaje && (
-        <div className="text-sm text-emerald-700 bg-emerald-50 border border-emerald-200 px-3 py-2">
-          {mensaje}
-        </div>
-      )}
 
       <button
-        onClick={handleGuardar}
-        disabled={!hayCambios || guardando}
-        className="w-full bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium py-2 transition-colors"
+        onClick={abrir}
+        className="w-full bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2 transition-colors"
       >
-        {guardando ? 'Guardando…' : 'Guardar cambios'}
+        Cambiar estado
       </button>
+
+      {abierto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="bg-white border border-gray-200 shadow-lg max-w-md w-full p-6 space-y-4">
+            <div className="text-sm font-semibold text-gray-900">
+              Cambiar estado del caso
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Nuevo estado
+              </label>
+              <select
+                value={estado}
+                onChange={(e) => setEstado(e.target.value as EstadoCaso)}
+                className="w-full px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
+              >
+                {ESTADOS.map((e) => (
+                  <option key={e} value={e}>
+                    {ESTADO_LABEL[e]}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">
+                Observación
+              </label>
+              <textarea
+                value={observacion}
+                onChange={(e) => setObservacion(e.target.value)}
+                rows={4}
+                placeholder="Describe el motivo del cambio…"
+                className="w-full px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent resize-none"
+              />
+            </div>
+
+            {error && (
+              <div className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={cerrar}
+                disabled={guardando}
+                className="border border-gray-300 text-sm px-4 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleGuardar}
+                disabled={guardando || !observacion.trim()}
+                className="bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 transition-colors"
+              >
+                {guardando ? 'Guardando…' : 'Guardar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

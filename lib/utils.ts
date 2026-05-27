@@ -14,6 +14,20 @@ export function formatFecha(fecha: string | null | undefined): string {
   })
 }
 
+export function formatFechaHora(fecha: string | null | undefined): string {
+  if (!fecha) return '—'
+  const d = new Date(fecha)
+  return d.toLocaleString('es-CL', {
+    timeZone: 'America/Santiago',
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+}
+
 export function formatFechaCorta(fecha: string | null | undefined): string {
   if (!fecha) return '—'
   const d = new Date(fecha)

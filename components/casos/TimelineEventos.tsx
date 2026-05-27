@@ -1,5 +1,5 @@
 import type { Evento } from '@/types/caso'
-import { formatFecha } from '@/lib/utils'
+import { formatFechaHora } from '@/lib/utils'
 
 interface Props {
   eventos: Evento[]
@@ -26,11 +26,13 @@ export default function TimelineEventos({ eventos }: Props) {
             <div className="flex items-baseline justify-between gap-2">
               <div className="text-sm font-medium text-gray-900">{ev.tipo}</div>
               <div className="text-xs text-gray-500 whitespace-nowrap">
-                {formatFecha(ev.created_at)}
+                {formatFechaHora(ev.fecha ?? ev.created_at)}
               </div>
             </div>
             {ev.detalle && (
-              <div className="text-sm text-gray-700 mt-0.5">{ev.detalle}</div>
+              <div className="text-sm text-gray-700 mt-0.5 whitespace-pre-wrap">
+                {ev.detalle}
+              </div>
             )}
             {ev.actor && (
               <div className="text-xs text-gray-500 mt-1">por {ev.actor}</div>

@@ -49,4 +49,5 @@ export interface Evento {
   detalle: string | null
   actor: string | null
   created_at?: string
+  fecha?: string
 }
