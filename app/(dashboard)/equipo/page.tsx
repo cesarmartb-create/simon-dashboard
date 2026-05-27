@@ -1,7 +1,7 @@
 import Header from '@/components/layout/Header'
-import { requireSupervisor } from '@/lib/sesion'
+import { requireVistaGlobal } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
-import { nombresPorRol } from '@/lib/auth'
+import { nombresQueGestionanCasos } from '@/lib/auth'
 import { ESTADOS, ESTADO_LABEL, type Caso, type EstadoCaso } from '@/types/caso'
 
 interface ResumenGestor {
@@ -14,13 +14,13 @@ interface ResumenGestor {
 }
 
 export default async function EquipoPage() {
-  const usuario = await requireSupervisor()
+  const usuario = await requireVistaGlobal()
   const supabase = createClient()
 
   const { data: casosData } = await supabase.from('casos').select('*')
   const casos = (casosData ?? []) as Caso[]
 
-  const gestores = nombresPorRol('gestor')
+  const gestores = nombresQueGestionanCasos()
 
   const resumen: ResumenGestor[] = gestores.map((nombre) => {
     const propios = casos.filter((c) => c.responsable === nombre)

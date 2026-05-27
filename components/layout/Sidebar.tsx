@@ -2,17 +2,26 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import type { Usuario } from '@/types/usuario'
+import type { Usuario, Rol } from '@/types/usuario'
 import { cn } from '@/lib/utils'
 
 interface Props {
   usuario: Usuario
 }
 
-const ITEMS = [
-  { href: '/casos', label: 'Casos', roles: ['supervisor', 'gestor'] },
-  { href: '/metricas', label: 'Métricas', roles: ['supervisor'] },
-  { href: '/equipo', label: 'Equipo', roles: ['supervisor'] },
+const ITEMS: { href: string; label: string; roles: Rol[] }[] = [
+  {
+    href: '/casos',
+    label: 'Casos',
+    roles: ['admin', 'supervisor', 'gestor', 'operador'],
+  },
+  { href: '/metricas', label: 'Métricas', roles: ['admin', 'supervisor'] },
+  { href: '/equipo', label: 'Equipo', roles: ['admin', 'supervisor'] },
+  {
+    href: '/configuracion',
+    label: 'Configuración',
+    roles: ['admin', 'operador'],
+  },
 ]
 
 export default function Sidebar({ usuario }: Props) {

@@ -6,6 +6,7 @@ import TimelineEventos from '@/components/casos/TimelineEventos'
 import AccionesCaso from '@/components/casos/AccionesCaso'
 import { getUsuarioActual } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
+import { gestionaCasosPropios } from '@/lib/auth'
 import { formatFecha } from '@/lib/utils'
 import type { Caso, Evento } from '@/types/caso'
 
@@ -25,7 +26,7 @@ export default async function CasoDetallePage({ params }: Props) {
 
   if (!caso) notFound()
 
-  if (usuario.rol === 'gestor' && caso.responsable !== usuario.nombre) {
+  if (gestionaCasosPropios(usuario.rol) && caso.responsable !== usuario.nombre) {
     return (
       <>
         <Header usuario={usuario} titulo="Caso" />

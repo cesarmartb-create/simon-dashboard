@@ -2,7 +2,7 @@
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { ESTADOS, ESTADO_LABEL } from '@/types/caso'
-import { nombresPorRol } from '@/lib/auth'
+import { nombresQueGestionanCasos, puedeVerVistaGlobal } from '@/lib/auth'
 import type { Rol } from '@/types/usuario'
 
 interface Props {
@@ -27,7 +27,7 @@ export default function FiltrosCasos({ rol, categorias }: Props) {
   const categoriaActual = searchParams.get('categoria') ?? ''
   const busquedaActual = searchParams.get('q') ?? ''
 
-  const gestores = nombresPorRol('gestor')
+  const gestores = nombresQueGestionanCasos()
 
   return (
     <div className="flex flex-wrap items-end gap-3 mb-6">
@@ -61,7 +61,7 @@ export default function FiltrosCasos({ rol, categorias }: Props) {
         </select>
       </div>
 
-      {rol === 'supervisor' && (
+      {puedeVerVistaGlobal(rol) && (
         <div className="flex flex-col">
           <label className="text-xs font-medium text-gray-700 mb-1">
             Responsable

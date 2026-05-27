@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getUsuario } from '@/lib/auth'
+import { getUsuario, gestionaCasosPropios } from '@/lib/auth'
 import { notificarColaborador } from '@/lib/notificar'
 import { ESTADOS, type EstadoCaso } from '@/types/caso'
 
@@ -46,7 +46,7 @@ export async function PATCH(
   }
 
   if (
-    usuario.rol === 'gestor' &&
+    gestionaCasosPropios(usuario.rol) &&
     casoExistente.responsable !== usuario.nombre
   ) {
     return NextResponse.json(

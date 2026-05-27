@@ -3,6 +3,7 @@ import CasoTable from '@/components/casos/CasoTable'
 import FiltrosCasos from '@/components/casos/FiltrosCasos'
 import { getUsuarioActual } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
+import { gestionaCasosPropios, puedeVerVistaGlobal } from '@/lib/auth'
 import type { Caso } from '@/types/caso'
 
 interface Props {
@@ -23,7 +24,7 @@ export default async function CasosPage({ searchParams }: Props) {
     .select('*')
     .order('fecha_creacion', { ascending: false })
 
-  if (usuario.rol === 'gestor') {
+  if (gestionaCasosPropios(usuario.rol)) {
     query = query.eq('responsable', usuario.nombre)
   } else if (searchParams.responsable) {
     query = query.eq('responsable', searchParams.responsable)
@@ -62,7 +63,7 @@ export default async function CasosPage({ searchParams }: Props) {
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">
-              {usuario.rol === 'supervisor'
+              {puedeVerVistaGlobal(usuario.rol)
                 ? 'Todos los casos'
                 : 'Mis casos asignados'}
             </h2>
@@ -81,7 +82,7 @@ export default async function CasosPage({ searchParams }: Props) {
         ) : (
           <CasoTable
             casos={(casos ?? []) as Caso[]}
-            mostrarResponsable={usuario.rol === 'supervisor'}
+            mostrarResponsable={puedeVerVistaGlobal(usuario.rol)}
           />
         )}
       </main>

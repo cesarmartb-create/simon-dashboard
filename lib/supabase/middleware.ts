@@ -1,6 +1,11 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { getUsuario } from '@/lib/auth'
+import {
+  getUsuario,
+  puedeVerVistaGlobal,
+  puedeAccederConfiguracion,
+  esAdmin,
+} from '@/lib/auth'
 
 const PUBLIC_PATHS = ['/login', '/auth', '/privacidad']
 
@@ -59,12 +64,38 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    const rutasSupervisor = ['/metricas', '/equipo']
-    const esRutaSupervisor = rutasSupervisor.some((r) => path.startsWith(r))
-    if (esRutaSupervisor && usuario.rol !== 'supervisor') {
+    // Métricas y Equipo: solo vista global (admin / supervisor).
+    const rutasVistaGlobal = ['/metricas', '/equipo']
+    if (
+      rutasVistaGlobal.some((r) => path.startsWith(r)) &&
+      !puedeVerVistaGlobal(usuario.rol)
+    ) {
       const url = request.nextUrl.clone()
       url.pathname = '/casos'
       return NextResponse.redirect(url)
+    }
+
+    // Configuración: admin u operador. Sub-pestañas restringidas a admin.
+    if (path.startsWith('/configuracion')) {
+      if (!puedeAccederConfiguracion(usuario.rol)) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/casos'
+        return NextResponse.redirect(url)
+      }
+
+      const rutasSoloAdmin = [
+        '/configuracion/derivaciones',
+        '/configuracion/locales',
+        '/configuracion/agente',
+      ]
+      if (
+        rutasSoloAdmin.some((r) => path.startsWith(r)) &&
+        !esAdmin(usuario.rol)
+      ) {
+        const url = request.nextUrl.clone()
+        url.pathname = '/configuracion/colaboradores'
+        return NextResponse.redirect(url)
+      }
     }
   }
 

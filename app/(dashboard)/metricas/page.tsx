@@ -1,12 +1,12 @@
 import Header from '@/components/layout/Header'
 import KPICard from '@/components/metricas/KPICard'
 import DistribucionEstados from '@/components/metricas/DistribucionEstados'
-import { requireSupervisor } from '@/lib/sesion'
+import { requireVistaGlobal } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
 import { ESTADOS, type Caso, type EstadoCaso } from '@/types/caso'
 
 export default async function MetricasPage() {
-  const usuario = await requireSupervisor()
+  const usuario = await requireVistaGlobal()
   const supabase = createClient()
 
   const { data: casosData } = await supabase.from('casos').select('*')

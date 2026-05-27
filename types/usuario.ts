@@ -1,4 +1,4 @@
-export type Rol = 'supervisor' | 'gestor'
+export type Rol = 'admin' | 'supervisor' | 'operador' | 'gestor'
 
 export interface Usuario {
   email: string

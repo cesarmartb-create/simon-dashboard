@@ -1,6 +1,11 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
-import { getUsuario } from '@/lib/auth'
+import {
+  getUsuario,
+  puedeVerVistaGlobal,
+  puedeAccederConfiguracion,
+  esAdmin,
+} from '@/lib/auth'
 import type { Usuario } from '@/types/usuario'
 
 export async function getUsuarioActual(): Promise<Usuario> {
@@ -17,8 +22,23 @@ export async function getUsuarioActual(): Promise<Usuario> {
   return usuario
 }
 
-export async function requireSupervisor(): Promise<Usuario> {
+/** Métricas y Equipo: admin o supervisor. */
+export async function requireVistaGlobal(): Promise<Usuario> {
   const usuario = await getUsuarioActual()
-  if (usuario.rol !== 'supervisor') redirect('/casos')
+  if (!puedeVerVistaGlobal(usuario.rol)) redirect('/casos')
+  return usuario
+}
+
+/** Sección Configuración: admin u operador. */
+export async function requireConfiguracion(): Promise<Usuario> {
+  const usuario = await getUsuarioActual()
+  if (!puedeAccederConfiguracion(usuario.rol)) redirect('/casos')
+  return usuario
+}
+
+/** Pestañas de Configuración exclusivas de admin (Derivaciones, Locales, Agente). */
+export async function requireAdmin(): Promise<Usuario> {
+  const usuario = await getUsuarioActual()
+  if (!esAdmin(usuario.rol)) redirect('/configuracion/colaboradores')
   return usuario
 }
