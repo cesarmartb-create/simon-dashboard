@@ -14,12 +14,42 @@ interface Colaborador {
   rol_portal: string
 }
 
-const ROLES_PORTAL = ['admin', 'supervisor', 'operador', 'gestor', 'sin acceso']
+interface LocalOpcion {
+  id: string
+  codigo: string | null
+  nombre: string
+}
+
+const CARGOS = [
+  'Auxiliar de Farmacia',
+  'Asistente de Sala',
+  'Químico Farmacéutico',
+  'Asistente Administrativa',
+  'Asistente Contable',
+  'Prevencionista de Riesgos',
+  'Jefe de Operaciones',
+  'Gerente de Operaciones',
+  'Analista de Control de Gestión',
+  'Asistente de Gerencia',
+  'Gerente de Administración',
+  'Gerente Comercial',
+  'Gerente General',
+]
+
+const ROLES_PORTAL: { value: string; descripcion: string }[] = [
+  { value: 'gestor', descripcion: 'Gestiona sus casos' },
+  {
+    value: 'operador',
+    descripcion: 'Gestiona sus casos + administra colaboradores',
+  },
+  { value: 'supervisor', descripcion: 'Ve todos los casos y métricas' },
+  { value: 'admin', descripcion: 'Acceso completo incluyendo configuración' },
+]
 
 const VACIO: Omit<Colaborador, 'id'> = {
   nombre: '',
   numero: '',
-  cargo: '',
+  cargo: CARGOS[0],
   local: '',
   rol_portal: 'gestor',
 }
@@ -28,6 +58,7 @@ export default function ColaboradoresTabla() {
   const supabase = createClient()
 
   const [filas, setFilas] = useState<Colaborador[]>([])
+  const [locales, setLocales] = useState<LocalOpcion[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,19 +71,36 @@ export default function ColaboradoresTabla() {
     async function cargar() {
       setCargando(true)
       setError(null)
-      const { data, error: err } = await supabase
-        .from('colaboradores')
-        .select('id, nombre, numero, cargo, local, rol_portal')
-        .eq('cliente_id', CLIENTE_ID)
-        .eq('activo', true)
-        .order('created_at', { ascending: true })
+
+      const [colab, locs] = await Promise.all([
+        supabase
+          .from('colaboradores')
+          .select('id, nombre, numero, cargo, local, rol_portal')
+          .eq('cliente_id', CLIENTE_ID)
+          .eq('activo', true)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('locales')
+          .select('id, codigo, nombre')
+          .eq('cliente_id', CLIENTE_ID)
+          .eq('activo', true)
+          .order('orden', { ascending: true }),
+      ])
 
       if (!activo) return
-      if (err) {
-        setError(`No se pudieron cargar los colaboradores: ${err.message}`)
+
+      if (colab.error) {
+        setError(`No se pudieron cargar los colaboradores: ${colab.error.message}`)
       } else {
-        setFilas((data ?? []) as Colaborador[])
+        setFilas((colab.data ?? []) as Colaborador[])
       }
+
+      if (locs.error) {
+        setError(`No se pudieron cargar los locales: ${locs.error.message}`)
+      } else {
+        setLocales((locs.data ?? []) as LocalOpcion[])
+      }
+
       setCargando(false)
     }
     cargar()
@@ -60,6 +108,13 @@ export default function ColaboradoresTabla() {
       activo = false
     }
   }, [supabase])
+
+  const sinLocales = !cargando && locales.length === 0
+
+  function abrirForm() {
+    setNuevo({ ...VACIO, local: locales[0]?.nombre ?? '' })
+    setMostrarForm(true)
+  }
 
   async function eliminar(id: string) {
     setError(null)
@@ -76,7 +131,7 @@ export default function ColaboradoresTabla() {
   }
 
   async function agregar() {
-    if (!nuevo.nombre.trim()) return
+    if (!nuevo.nombre.trim() || !nuevo.local) return
     setGuardando(true)
     setError(null)
 
@@ -86,8 +141,8 @@ export default function ColaboradoresTabla() {
         cliente_id: CLIENTE_ID,
         nombre: nuevo.nombre.trim(),
         numero: nuevo.numero.trim(),
-        cargo: nuevo.cargo.trim(),
-        local: nuevo.local.trim(),
+        cargo: nuevo.cargo,
+        local: nuevo.local,
         rol_portal: nuevo.rol_portal,
         activo: true,
       })
@@ -118,9 +173,9 @@ export default function ColaboradoresTabla() {
           </p>
         </div>
         <button
-          onClick={() => setMostrarForm((v) => !v)}
-          disabled={cargando}
-          className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-4 py-2 transition-colors"
+          onClick={() => (mostrarForm ? setMostrarForm(false) : abrirForm())}
+          disabled={cargando || sinLocales}
+          className="bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 transition-colors"
         >
           {mostrarForm ? 'Cancelar' : 'Agregar colaborador'}
         </button>
@@ -129,6 +184,12 @@ export default function ColaboradoresTabla() {
       {error && (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">
           {error}
+        </div>
+      )}
+
+      {sinLocales && (
+        <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
+          Primero crea locales en la tab Locales.
         </div>
       )}
 
@@ -144,16 +205,38 @@ export default function ColaboradoresTabla() {
             value={nuevo.numero}
             onChange={(v) => setNuevo((n) => ({ ...n, numero: v }))}
           />
-          <Campo
-            label="Cargo"
-            value={nuevo.cargo}
-            onChange={(v) => setNuevo((n) => ({ ...n, cargo: v }))}
-          />
-          <Campo
-            label="Local"
-            value={nuevo.local}
-            onChange={(v) => setNuevo((n) => ({ ...n, local: v }))}
-          />
+          <div className="flex flex-col">
+            <label className="text-xs font-medium text-gray-700 mb-1">
+              Cargo
+            </label>
+            <select
+              value={nuevo.cargo}
+              onChange={(e) => setNuevo((n) => ({ ...n, cargo: e.target.value }))}
+              className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
+            >
+              {CARGOS.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex flex-col">
+            <label className="text-xs font-medium text-gray-700 mb-1">
+              Local
+            </label>
+            <select
+              value={nuevo.local}
+              onChange={(e) => setNuevo((n) => ({ ...n, local: e.target.value }))}
+              className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
+            >
+              {locales.map((l) => (
+                <option key={l.id} value={l.nombre}>
+                  {l.codigo ? `${l.codigo} — ${l.nombre}` : l.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="flex flex-col">
             <label className="text-xs font-medium text-gray-700 mb-1">
               Rol portal
@@ -167,8 +250,8 @@ export default function ColaboradoresTabla() {
                 className="flex-1 px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
               >
                 {ROLES_PORTAL.map((r) => (
-                  <option key={r} value={r}>
-                    {r}
+                  <option key={r.value} value={r.value}>
+                    {r.value} — {r.descripcion}
                   </option>
                 ))}
               </select>
