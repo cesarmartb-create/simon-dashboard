@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { getUsuario, gestionaCasosPropios } from '@/lib/auth'
-import { notificarEscalado } from '@/lib/notificar'
+import { notificarEscalado, notificarCierre } from '@/lib/notificar'
 import { ESTADOS, type EstadoCaso } from '@/types/caso'
 
 interface Body {
@@ -120,19 +120,23 @@ export async function PATCH(
     }
   }
 
+  const casoCorreo = {
+    id: caso.id as string,
+    colaborador_nombre: caso.colaborador_nombre as string | null,
+    local: caso.local as string | null,
+    categoria: caso.categoria as string | null,
+    consulta: caso.consulta as string | null,
+    responsable: caso.responsable as string | null,
+  }
+
   // 4. Escalamiento: enviar correo a admins y supervisores.
   if (body.notificar_escalado) {
-    await notificarEscalado(
-      {
-        id: caso.id as string,
-        colaborador_nombre: caso.colaborador_nombre as string | null,
-        local: caso.local as string | null,
-        categoria: caso.categoria as string | null,
-        consulta: caso.consulta as string | null,
-      },
-      observacion,
-      user.email
-    )
+    await notificarEscalado(casoCorreo, observacion, user.email)
+  }
+
+  // 5. Cierre: notificar a admins, supervisores y al responsable.
+  if (nuevoEstado === 'cerrado') {
+    await notificarCierre(casoCorreo, observacion, user.email)
   }
 
   return NextResponse.json({ ok: true })

@@ -36,6 +36,13 @@ export function nombresQueGestionanCasos(): string[] {
     .map((v) => v.nombre)
 }
 
+/** Resuelve el email de un usuario a partir de su nombre. Null si no está registrado. */
+export function emailPorNombre(nombre: string | null | undefined): string | null {
+  if (!nombre) return null
+  const entry = Object.entries(USUARIOS).find(([, v]) => v.nombre === nombre)
+  return entry ? entry[0] : null
+}
+
 // --- Capacidades por rol ---
 
 export function esAdmin(rol: Rol): boolean {
