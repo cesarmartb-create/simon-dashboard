@@ -86,6 +86,7 @@ export async function updateSession(request: NextRequest) {
       const rutasSoloAdmin = [
         '/configuracion/derivaciones',
         '/configuracion/locales',
+        '/configuracion/cargos',
         '/configuracion/agente',
       ]
       if (

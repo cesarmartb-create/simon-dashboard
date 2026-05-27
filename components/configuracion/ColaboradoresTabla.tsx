@@ -21,21 +21,10 @@ interface LocalOpcion {
   nombre: string
 }
 
-const CARGOS = [
-  'Auxiliar de Farmacia',
-  'Asistente de Sala',
-  'Químico Farmacéutico',
-  'Asistente Administrativa',
-  'Asistente Contable',
-  'Prevencionista de Riesgos',
-  'Jefe de Operaciones',
-  'Gerente de Operaciones',
-  'Analista de Control de Gestión',
-  'Asistente de Gerencia',
-  'Gerente de Administración',
-  'Gerente Comercial',
-  'Gerente General',
-]
+interface CargoOpcion {
+  id: string
+  nombre: string
+}
 
 const ROLES_PORTAL: { value: string; descripcion: string }[] = [
   { value: 'gestor', descripcion: 'Gestiona sus casos' },
@@ -50,7 +39,7 @@ const ROLES_PORTAL: { value: string; descripcion: string }[] = [
 const VACIO: Omit<Colaborador, 'id'> = {
   nombre: '',
   numero: '',
-  cargo: CARGOS[0],
+  cargo: '',
   local: '',
   rol_portal: 'gestor',
 }
@@ -60,6 +49,7 @@ export default function ColaboradoresTabla() {
 
   const [filas, setFilas] = useState<Colaborador[]>([])
   const [locales, setLocales] = useState<LocalOpcion[]>([])
+  const [cargos, setCargos] = useState<CargoOpcion[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -77,7 +67,7 @@ export default function ColaboradoresTabla() {
       setCargando(true)
       setError(null)
 
-      const [colab, locs] = await Promise.all([
+      const [colab, locs, cgs] = await Promise.all([
         supabase
           .from('colaboradores')
           .select('id, nombre, numero, cargo, local, rol_portal')
@@ -87,6 +77,12 @@ export default function ColaboradoresTabla() {
         supabase
           .from('locales')
           .select('id, codigo, nombre')
+          .eq('cliente_id', CLIENTE_ID)
+          .eq('activo', true)
+          .order('orden', { ascending: true }),
+        supabase
+          .from('cargos')
+          .select('id, nombre')
           .eq('cliente_id', CLIENTE_ID)
           .eq('activo', true)
           .order('orden', { ascending: true }),
@@ -106,6 +102,12 @@ export default function ColaboradoresTabla() {
         setLocales((locs.data ?? []) as LocalOpcion[])
       }
 
+      if (cgs.error) {
+        setError(`No se pudieron cargar los cargos: ${cgs.error.message}`)
+      } else {
+        setCargos((cgs.data ?? []) as CargoOpcion[])
+      }
+
       setCargando(false)
     }
     cargar()
@@ -115,11 +117,17 @@ export default function ColaboradoresTabla() {
   }, [supabase])
 
   const sinLocales = !cargando && locales.length === 0
+  const sinCargos = !cargando && cargos.length === 0
+  const faltaCatalogo = sinLocales || sinCargos
   const editando = editandoId !== null
 
   function abrirAgregar() {
     setEditandoId(null)
-    setDatos({ ...VACIO, local: locales[0]?.nombre ?? '' })
+    setDatos({
+      ...VACIO,
+      local: locales[0]?.nombre ?? '',
+      cargo: cargos[0]?.nombre ?? '',
+    })
     setMostrarForm(true)
   }
 
@@ -245,6 +253,7 @@ export default function ColaboradoresTabla() {
   }
 
   const localEnLista = locales.some((l) => l.nombre === datos.local)
+  const cargoEnLista = cargos.some((c) => c.nombre === datos.cargo)
 
   return (
     <div className="space-y-4">
@@ -259,7 +268,7 @@ export default function ColaboradoresTabla() {
         </div>
         <button
           onClick={() => (mostrarForm ? cerrarForm() : abrirAgregar())}
-          disabled={cargando || (sinLocales && !mostrarForm)}
+          disabled={cargando || (faltaCatalogo && !mostrarForm)}
           className="bg-accent hover:bg-accent-hover disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 transition-colors"
         >
           {mostrarForm ? 'Cancelar' : 'Agregar colaborador'}
@@ -275,6 +284,12 @@ export default function ColaboradoresTabla() {
       {sinLocales && (
         <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
           Primero crea locales en la tab Locales.
+        </div>
+      )}
+
+      {sinCargos && (
+        <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
+          Primero crea cargos en la tab Cargos.
         </div>
       )}
 
@@ -319,9 +334,12 @@ export default function ColaboradoresTabla() {
                 onChange={(e) => setDatos((d) => ({ ...d, cargo: e.target.value }))}
                 className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
               >
-                {CARGOS.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
+                {!cargoEnLista && datos.cargo && (
+                  <option value={datos.cargo}>{datos.cargo}</option>
+                )}
+                {cargos.map((c) => (
+                  <option key={c.id} value={c.nombre}>
+                    {c.nombre}
                   </option>
                 ))}
               </select>
