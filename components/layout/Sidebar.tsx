@@ -13,14 +13,14 @@ const ITEMS: { href: string; label: string; roles: Rol[] }[] = [
   {
     href: '/casos',
     label: 'Casos',
-    roles: ['admin', 'supervisor', 'gestor', 'operador'],
+    roles: ['admin', 'gestor', 'qf'],
   },
-  { href: '/metricas', label: 'Métricas', roles: ['admin', 'supervisor'] },
-  { href: '/equipo', label: 'Equipo', roles: ['admin', 'supervisor'] },
+  { href: '/metricas', label: 'Métricas', roles: ['admin'] },
+  { href: '/equipo', label: 'Equipo', roles: ['admin'] },
   {
     href: '/configuracion',
     label: 'Configuración',
-    roles: ['admin', 'operador'],
+    roles: ['admin'],
   },
 ]
 

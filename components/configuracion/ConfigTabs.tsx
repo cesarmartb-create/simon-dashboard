@@ -13,7 +13,7 @@ const TABS: { href: string; label: string; roles: Rol[] }[] = [
   {
     href: '/configuracion/colaboradores',
     label: 'Colaboradores',
-    roles: ['admin', 'operador'],
+    roles: ['admin'],
   },
   {
     href: '/configuracion/derivaciones',

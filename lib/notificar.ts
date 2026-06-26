@@ -204,9 +204,7 @@ export async function notificarEscalado(
   observacion: string,
   emailGestor: string
 ): Promise<void> {
-  const destinatarios = Array.from(
-    new Set([...emailsPorRol('admin'), ...emailsPorRol('supervisor')])
-  )
+  const destinatarios = Array.from(new Set(emailsPorRol('admin')))
 
   const tema = temaDe(caso)
   const colaborador = caso.colaborador_nombre ?? '—'
@@ -264,7 +262,6 @@ export async function notificarCierre(
   const destinatarios = Array.from(
     new Set([
       ...emailsPorRol('admin'),
-      ...emailsPorRol('supervisor'),
       ...(emailResponsable ? [emailResponsable] : []),
     ])
   )
