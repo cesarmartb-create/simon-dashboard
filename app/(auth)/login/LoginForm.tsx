@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { getUsuario } from '@/lib/auth'
 
 export default function LoginForm() {
   const router = useRouter()
@@ -22,12 +21,6 @@ export default function LoginForm() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setError(null)
-
-    const usuario = getUsuario(email)
-    if (!usuario) {
-      setError('Este email no tiene acceso al panel.')
-      return
-    }
 
     setLoading(true)
     const supabase = createClient()

@@ -1,13 +1,21 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import {
-  getUsuario,
   puedeVerVistaGlobal,
   puedeAccederConfiguracion,
   esAdmin,
 } from '@/lib/auth'
+import type { Rol } from '@/types/usuario'
 
 const PUBLIC_PATHS = ['/login', '/auth', '/privacidad']
+const ROLES_VALIDOS: Rol[] = ['admin', 'gestor', 'qf']
+
+interface PerfilActual {
+  cliente_id: string | null
+  rol: string | null
+  local: string | null
+  areas: string[] | null
+}
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({ request })
@@ -55,8 +63,18 @@ export async function updateSession(request: NextRequest) {
   }
 
   if (user && !esPublica) {
-    const usuario = getUsuario(user.email)
-    if (!usuario) {
+    // Gate basado en BD: el usuario debe tener fila válida en usuarios_cliente
+    // (perfil_actual ya filtra por activo=true internamente).
+    const { data: perfil, error: errorPerfil } = await supabase
+      .rpc('perfil_actual')
+      .single<PerfilActual>()
+
+    if (
+      errorPerfil ||
+      !perfil ||
+      !perfil.rol ||
+      !ROLES_VALIDOS.includes(perfil.rol as Rol)
+    ) {
       await supabase.auth.signOut()
       const url = request.nextUrl.clone()
       url.pathname = '/login'
@@ -64,20 +82,22 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
 
-    // Métricas y Equipo: solo vista global (admin / supervisor).
+    const rol = perfil.rol as Rol
+
+    // Métricas y Equipo: solo vista global (admin).
     const rutasVistaGlobal = ['/metricas', '/equipo']
     if (
       rutasVistaGlobal.some((r) => path.startsWith(r)) &&
-      !puedeVerVistaGlobal(usuario.rol)
+      !puedeVerVistaGlobal(rol)
     ) {
       const url = request.nextUrl.clone()
       url.pathname = '/casos'
       return NextResponse.redirect(url)
     }
 
-    // Configuración: admin u operador. Sub-pestañas restringidas a admin.
+    // Configuración: solo admin. Sub-pestañas también solo admin.
     if (path.startsWith('/configuracion')) {
-      if (!puedeAccederConfiguracion(usuario.rol)) {
+      if (!puedeAccederConfiguracion(rol)) {
         const url = request.nextUrl.clone()
         url.pathname = '/casos'
         return NextResponse.redirect(url)
@@ -91,7 +111,7 @@ export async function updateSession(request: NextRequest) {
       ]
       if (
         rutasSoloAdmin.some((r) => path.startsWith(r)) &&
-        !esAdmin(usuario.rol)
+        !esAdmin(rol)
       ) {
         const url = request.nextUrl.clone()
         url.pathname = '/configuracion/colaboradores'
