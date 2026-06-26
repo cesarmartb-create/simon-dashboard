@@ -6,6 +6,7 @@ import {
   puedeVerVistaGlobal,
   puedeAccederConfiguracion,
   esAdmin,
+  puedeCrearCaso,
 } from '@/lib/auth'
 import type { Usuario, Rol } from '@/types/usuario'
 
@@ -76,5 +77,12 @@ export async function requireConfiguracion(): Promise<Usuario> {
 export async function requireAdmin(): Promise<Usuario> {
   const usuario = await getUsuarioActual()
   if (!esAdmin(usuario.rol)) redirect('/configuracion/colaboradores')
+  return usuario
+}
+
+/** Crear nuevas solicitudes: admin y qf. */
+export async function requireCrearCaso(): Promise<Usuario> {
+  const usuario = await getUsuarioActual()
+  if (!puedeCrearCaso(usuario.rol)) redirect('/casos')
   return usuario
 }

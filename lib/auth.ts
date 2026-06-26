@@ -78,3 +78,8 @@ export function puedeAccederConfiguracion(rol: Rol): boolean {
 export function gestionaCasosPropios(_rol: Rol): boolean {
   return false
 }
+
+/** Puede crear nuevas solicitudes/casos desde el portal. */
+export function puedeCrearCaso(rol: Rol): boolean {
+  return rol === 'admin' || rol === 'qf'
+}

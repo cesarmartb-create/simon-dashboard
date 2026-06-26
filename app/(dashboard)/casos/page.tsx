@@ -1,9 +1,14 @@
+import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import CasoTable from '@/components/casos/CasoTable'
 import FiltrosCasos from '@/components/casos/FiltrosCasos'
 import { getUsuarioActual } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
-import { gestionaCasosPropios, puedeVerVistaGlobal } from '@/lib/auth'
+import {
+  gestionaCasosPropios,
+  puedeVerVistaGlobal,
+  puedeCrearCaso,
+} from '@/lib/auth'
 import type { Caso } from '@/types/caso'
 
 interface Props {
@@ -71,6 +76,14 @@ export default async function CasosPage({ searchParams }: Props) {
               {casos?.length ?? 0} caso{casos?.length === 1 ? '' : 's'}
             </p>
           </div>
+          {puedeCrearCaso(usuario.rol) && (
+            <Link
+              href="/casos/nuevo"
+              className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 transition-colors"
+            >
+              Nueva solicitud
+            </Link>
+          )}
         </div>
 
         <FiltrosCasos rol={usuario.rol} categorias={categorias} />

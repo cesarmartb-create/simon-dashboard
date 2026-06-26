@@ -154,9 +154,11 @@ export default async function CasoDetallePage({ params }: Props) {
             </section>
           </div>
 
-          <div className="col-span-1">
-            <AccionesCaso casoId={caso.id} estadoActual={caso.estado} />
-          </div>
+          {usuario.rol !== 'qf' && (
+            <div className="col-span-1">
+              <AccionesCaso casoId={caso.id} estadoActual={caso.estado} />
+            </div>
+          )}
         </div>
       </main>
     </>
