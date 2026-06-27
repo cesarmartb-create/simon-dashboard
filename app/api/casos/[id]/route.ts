@@ -44,7 +44,7 @@ export async function PATCH(
   const { data: caso, error: errorFetch } = await supabase
     .from('casos')
     .select(
-      'id, estado, responsable, colaborador_nombre, local, categoria, consulta'
+      'id, estado, responsable, colaborador_nombre, local, categoria, consulta, local_correo'
     )
     .eq('id', params.id)
     .maybeSingle()
@@ -127,6 +127,7 @@ export async function PATCH(
     categoria: caso.categoria as string | null,
     consulta: caso.consulta as string | null,
     responsable: caso.responsable as string | null,
+    local_correo: caso.local_correo as string | null,
   }
 
   // 4. Escalamiento: enviar correo a admins y supervisores.

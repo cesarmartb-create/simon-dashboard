@@ -25,6 +25,7 @@ interface CasoCorreo {
   categoria: string | null
   consulta: string | null
   responsable: string | null
+  local_correo: string | null
 }
 
 /**
@@ -258,18 +259,15 @@ export async function notificarCierre(
   observacion: string,
   emailGestor: string
 ): Promise<void> {
-  // caso.responsable ya es el correo del responsable (modelo nuevo).
-  // Lo usamos directo; el filtro @ descarta nombres viejos o null que romperian SendGrid.
-  const correoResponsable =
-    caso.responsable && caso.responsable.includes('@')
-      ? caso.responsable
-      : null
-  const destinatarios = Array.from(
-    new Set([
-      ...emailsPorRol('admin'),
-      ...(correoResponsable ? [correoResponsable] : []),
-    ])
-  )
+  // Piloto: el cierre se notifica a Cesar (fijo), al responsable del area
+  // y al correo del local que genero el caso (solo casos del dashboard).
+  // El filtro @ descarta valores null o que no sean correo (no romper SendGrid).
+  const correos = [
+    'cesar.martinez@grupobaco.cl',
+    caso.responsable,
+    caso.local_correo,
+  ].filter((e): e is string => typeof e === 'string' && e.includes('@'))
+  const destinatarios = Array.from(new Set(correos))
 
   const tema = temaDe(caso)
   const colaborador = caso.colaborador_nombre ?? '—'
