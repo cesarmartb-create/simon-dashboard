@@ -39,7 +39,7 @@ export default function NuevaSolicitudForm({ clienteId, local }: Props) {
       .from('colaboradores')
       .select('nombre')
       .eq('local', localCodigo)
-      .eq('cargo', 'jefe_de_local_quimico_farmaceutico')
+      .eq('cargo', localCodigo === 'OFICINA' ? 'gerente_comercial' : 'jefe_de_local_quimico_farmaceutico')
       .eq('activo', true)
       .order('nombre')
       .then(({ data }) => {
