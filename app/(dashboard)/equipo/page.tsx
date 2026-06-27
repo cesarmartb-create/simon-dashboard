@@ -1,7 +1,7 @@
 import Header from '@/components/layout/Header'
 import { requireVistaGlobal } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
-import { nombresQueGestionanCasos } from '@/lib/auth'
+// gestores se derivan de areas_derivacion (correo real), no del mapa hardcodeado
 import { ESTADOS, ESTADO_LABEL, type Caso, type EstadoCaso } from '@/types/caso'
 
 interface ResumenGestor {
@@ -20,10 +20,29 @@ export default async function EquipoPage() {
   const { data: casosData } = await supabase.from('casos').select('*')
   const casos = (casosData ?? []) as Caso[]
 
-  const gestores = nombresQueGestionanCasos()
+  const { data: areasData } = await supabase
+    .from('areas_derivacion')
+    .select('responsable_nombre, responsable_correo')
+    .eq('cliente_id', 'grupobaco')
+    .eq('activo', true)
+    .order('orden', { ascending: true })
 
-  const resumen: ResumenGestor[] = gestores.map((nombre) => {
-    const propios = casos.filter((c) => c.responsable === nombre)
+  const areas = (areasData ?? []) as {
+    responsable_nombre: string
+    responsable_correo: string
+  }[]
+
+  // Un responsable por correo (dedup: un mismo correo puede cubrir varias areas).
+  const gestoresPorCorreo = new Map<string, string>()
+  for (const a of areas) {
+    if (a.responsable_correo && !gestoresPorCorreo.has(a.responsable_correo)) {
+      gestoresPorCorreo.set(a.responsable_correo, a.responsable_nombre)
+    }
+  }
+
+  const resumen: ResumenGestor[] = Array.from(gestoresPorCorreo.entries()).map(
+    ([correo, nombre]) => {
+      const propios = casos.filter((c) => c.responsable === correo)
     const cerrados = propios.filter((c) => c.estado === 'cerrado')
     const horasCierre = cerrados
       .filter((c) => c.fecha_creacion && c.fecha_cierre)
@@ -54,8 +73,9 @@ export default async function EquipoPage() {
       cerrados: cerrados.length,
       abiertos: propios.filter((c) => c.estado !== 'cerrado').length,
       promedioHoras: promedio,
+      }
     }
-  })
+  )
 
   return (
     <>
