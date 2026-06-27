@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
@@ -27,6 +27,24 @@ export default function NuevaSolicitudForm({ clienteId, local }: Props) {
   const [colaboradorNombre, setColaboradorNombre] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [qfs, setQfs] = useState<{ nombre: string }[]>([])
+  const [reportadoPor, setReportadoPor] = useState('')
+
+  const localCodigo = local.split(' — ')[0].trim()
+
+  useEffect(() => {
+    if (!localCodigo) return
+    supabase
+      .from('colaboradores')
+      .select('nombre')
+      .eq('local', localCodigo)
+      .eq('cargo', 'jefe_de_local_quimico_farmaceutico')
+      .eq('activo', true)
+      .order('nombre')
+      .then(({ data }) => {
+        if (data) setQfs(data)
+      })
+  }, [localCodigo])
 
   const perfilIncompleto = !clienteId || !local
 
@@ -52,6 +70,10 @@ export default function NuevaSolicitudForm({ clienteId, local }: Props) {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!consulta.trim()) return
+    if (!reportadoPor) {
+      setError('Debes seleccionar quién reporta.')
+      return
+    }
     setGuardando(true)
     setError(null)
 
@@ -63,6 +85,7 @@ export default function NuevaSolicitudForm({ clienteId, local }: Props) {
         categoria,
         consulta: consulta.trim(),
         colaborador_nombre: colaboradorNombre.trim() || null,
+        reportado_por: reportadoPor,
         estado: 'abierto',
         origen: 'web',
       })
@@ -87,6 +110,27 @@ export default function NuevaSolicitudForm({ clienteId, local }: Props) {
     >
       <div className="text-sm text-gray-500">
         El caso quedará asociado a tu local (<strong>{local}</strong>).
+      </div>
+
+      <div className="flex flex-col">
+        <label className="text-xs font-medium text-gray-700 mb-1">
+          ¿Quién reporta?
+        </label>
+        <select
+          value={reportadoPor}
+          onChange={(e) => setReportadoPor(e.target.value)}
+          required
+          className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
+        >
+          <option value="" disabled>
+            Selecciona tu nombre…
+          </option>
+          {qfs.map((q) => (
+            <option key={q.nombre} value={q.nombre}>
+              {q.nombre}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="flex flex-col">
