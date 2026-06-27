@@ -25,7 +25,7 @@ interface CasoCorreo {
   categoria: string | null
   consulta: string | null
   responsable: string | null
-  local_correo: string | null
+  local_correo?: string | null
 }
 
 /**
