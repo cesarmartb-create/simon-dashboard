@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
+import { crearCaso } from '@/app/(dashboard)/casos/nuevo/actions'
 
 interface Props {
   clienteId: string
@@ -77,29 +78,21 @@ export default function NuevaSolicitudForm({ clienteId, local }: Props) {
     setGuardando(true)
     setError(null)
 
-    const { data, error: err } = await supabase
-      .from('casos')
-      .insert({
-        cliente_id: clienteId,
-        local,
-        categoria,
-        consulta: consulta.trim(),
-        colaborador_nombre: colaboradorNombre.trim() || null,
-        reportado_por: reportadoPor,
-        estado: 'abierto',
-        origen: 'web',
-      })
-      .select('id')
-      .single()
+    const resultado = await crearCaso({
+      categoria,
+      consulta: consulta.trim(),
+      reportadoPor,
+      colaboradorNombre: colaboradorNombre.trim() || null,
+    })
 
     setGuardando(false)
 
-    if (err || !data) {
-      setError(`No se pudo crear el caso: ${err?.message ?? 'error desconocido'}`)
+    if (!resultado.ok || !resultado.casoId) {
+      setError(resultado.error ?? 'No se pudo crear el caso.')
       return
     }
 
-    router.push(`/casos/${data.id}`)
+    router.push(`/casos/${resultado.casoId}`)
     router.refresh()
   }
 

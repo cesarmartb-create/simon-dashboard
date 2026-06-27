@@ -308,3 +308,69 @@ export async function notificarCierre(
     contexto: 'cierre',
   })
 }
+
+/**
+ * Notifica por correo cuando entra una solicitud nueva desde el portal web.
+ * Destinatarios: el responsable del área (si existe) + César.
+ * Nunca lanza: cualquier error se loguea y se descarta.
+ */
+export async function notificarNuevoCaso(
+  caso: CasoCorreo,
+  reportadoPor: string | null,
+  responsableCorreo: string | null
+): Promise<void> {
+  const CESAR = 'cesar.martinez@grupobaco.cl'
+  const destinatarios = Array.from(
+    new Set([
+      CESAR,
+      ...(responsableCorreo ? [responsableCorreo] : []),
+    ])
+  )
+
+  const tema = temaDe(caso)
+  const local = caso.local ?? '—'
+  const reporta = reportadoPor ?? '—'
+  const link = linkCaso(caso.id)
+  const sinResponsable = !responsableCorreo
+
+  const filas: [string, string][] = [
+    ['Reportado por', reporta],
+    ['Local', local],
+    ['Tema', tema],
+    ['Consulta', caso.consulta ?? '—'],
+  ]
+  if (sinResponsable) {
+    filas.push(['Atención', 'Esta categoría no tiene responsable asignado. Revisar configuración.'])
+  }
+
+  const intro = sinResponsable
+    ? 'Entró una solicitud nueva pero su categoría no tiene responsable asignado. Requiere revisión.'
+    : 'Entró una solicitud nueva desde el portal.'
+
+  const texto = [
+    intro,
+    '',
+    `Reportado por: ${reporta}`,
+    `Local: ${local}`,
+    `Tema: ${tema}`,
+    `Consulta: ${caso.consulta ?? '—'}`,
+    '',
+    `Ver el caso: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: sinResponsable ? 'Solicitud nueva sin responsable' : 'Solicitud nueva',
+    headerColor: sinResponsable ? '#D99033' : '#2563EB',
+    intro,
+    filas,
+    link,
+  })
+
+  await enviarCorreoCaso({
+    destinatarios,
+    subject: `Solicitud nueva: ${tema}`,
+    texto,
+    html,
+    contexto: 'nuevo caso',
+  })
+}
