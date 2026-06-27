@@ -1,4 +1,4 @@
-import { emailsPorRol, getUsuario, emailPorNombre } from '@/lib/auth'
+import { emailsPorRol, getUsuario } from '@/lib/auth'
 
 const SIMON_URL = 'https://simon-62wy.onrender.com/notificar-colaborador'
 const SENDGRID_URL = 'https://api.sendgrid.com/v3/mail/send'
@@ -258,11 +258,16 @@ export async function notificarCierre(
   observacion: string,
   emailGestor: string
 ): Promise<void> {
-  const emailResponsable = emailPorNombre(caso.responsable)
+  // caso.responsable ya es el correo del responsable (modelo nuevo).
+  // Lo usamos directo; el filtro @ descarta nombres viejos o null que romperian SendGrid.
+  const correoResponsable =
+    caso.responsable && caso.responsable.includes('@')
+      ? caso.responsable
+      : null
   const destinatarios = Array.from(
     new Set([
       ...emailsPorRol('admin'),
-      ...(emailResponsable ? [emailResponsable] : []),
+      ...(correoResponsable ? [correoResponsable] : []),
     ])
   )
 
