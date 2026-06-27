@@ -41,7 +41,8 @@ export default function CasoTable({ casos, mostrarResponsable = true }: Props) {
                 <div className="font-medium text-gray-900">
                   {caso.reportado_por ?? caso.colaborador_nombre ?? '—'}
                 </div>
-                {caso.colaborador_nombre &&
+                {caso.reportado_por &&
+                  caso.colaborador_nombre &&
                   caso.colaborador_nombre !== caso.reportado_por && (
                     <div className="text-xs text-gray-500">
                       Afectado: {caso.colaborador_nombre}
