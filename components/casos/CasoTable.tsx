@@ -39,13 +39,14 @@ export default function CasoTable({ casos, mostrarResponsable = true }: Props) {
             <tr key={caso.id} className="hover:bg-gray-50 transition-colors">
               <td className="px-4 py-3">
                 <div className="font-medium text-gray-900">
-                  {caso.colaborador_nombre ?? '—'}
+                  {caso.reportado_por ?? caso.colaborador_nombre ?? '—'}
                 </div>
-                {caso.colaborador_cargo && (
-                  <div className="text-xs text-gray-500">
-                    {caso.colaborador_cargo}
-                  </div>
-                )}
+                {caso.colaborador_nombre &&
+                  caso.colaborador_nombre !== caso.reportado_por && (
+                    <div className="text-xs text-gray-500">
+                      Afectado: {caso.colaborador_nombre}
+                    </div>
+                  )}
               </td>
               <td className="px-4 py-3 text-gray-700">{caso.local ?? '—'}</td>
               <td className="px-4 py-3 text-gray-700">

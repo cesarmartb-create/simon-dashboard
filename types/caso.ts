@@ -28,6 +28,7 @@ export interface Caso {
   colaborador_nombre: string | null
   colaborador_numero: string | null
   colaborador_cargo: string | null
+  reportado_por: string | null
   local: string | null
   consulta: string | null
   categoria: string | null
