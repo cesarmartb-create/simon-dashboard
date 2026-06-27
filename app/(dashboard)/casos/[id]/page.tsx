@@ -64,10 +64,17 @@ export default async function CasoDetallePage({ params }: Props) {
               Caso #{caso.id.slice(0, 8)}
             </div>
             <h2 className="text-xl font-semibold text-gray-900">
-              {caso.colaborador_nombre ?? 'Colaborador sin nombre'}
+              {caso.reportado_por ?? caso.colaborador_nombre ?? 'Sin nombre'}
             </h2>
+            {caso.reportado_por &&
+              caso.colaborador_nombre &&
+              caso.colaborador_nombre !== caso.reportado_por && (
+                <div className="text-sm text-gray-500 mt-1">
+                  Afectado: {caso.colaborador_nombre}
+                </div>
+              )}
             <div className="text-sm text-gray-500 mt-1">
-              {caso.colaborador_cargo ?? '—'} · {caso.local ?? '—'}
+              {caso.local ?? '—'}
             </div>
           </div>
           <EstadoBadge estado={caso.estado} />
@@ -89,8 +96,14 @@ export default async function CasoDetallePage({ params }: Props) {
                 Información del colaborador
               </h3>
               <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                <div className="col-span-2">
+                  <dt className="text-xs text-gray-500">Reportado por</dt>
+                  <dd className="text-gray-900 font-medium">
+                    {caso.reportado_por ?? '—'}
+                  </dd>
+                </div>
                 <div>
-                  <dt className="text-xs text-gray-500">Nombre</dt>
+                  <dt className="text-xs text-gray-500">Colaborador afectado</dt>
                   <dd className="text-gray-900">
                     {caso.colaborador_nombre ?? '—'}
                   </dd>
