@@ -58,6 +58,7 @@ export async function crearCaso(
       colaborador_nombre: input.colaboradorNombre?.trim() || null,
       reportado_por: input.reportadoPor,
       responsable: responsableCorreo,
+      local_correo: usuario.email,
       estado: 'abierto',
       origen: 'web',
     })
