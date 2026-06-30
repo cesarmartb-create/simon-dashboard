@@ -15,9 +15,20 @@ export default function ResetPasswordPage() {
 
   useEffect(() => {
     const supabase = createClient()
-    supabase.auth.getSession().then(({ data }) => {
+    const code = new URLSearchParams(window.location.search).get('code')
+
+    async function prepararSesion() {
+      if (code) {
+        const { data, error: exchangeError } =
+          await supabase.auth.exchangeCodeForSession(code)
+        setSesionValida(!exchangeError && !!data.session)
+        return
+      }
+      const { data } = await supabase.auth.getSession()
       setSesionValida(!!data.session)
-    })
+    }
+
+    prepararSesion()
   }, [])
 
   async function handleSubmit(e: React.FormEvent) {
