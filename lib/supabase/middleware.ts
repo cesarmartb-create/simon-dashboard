@@ -7,7 +7,7 @@ import {
 } from '@/lib/auth'
 import type { Rol } from '@/types/usuario'
 
-const PUBLIC_PATHS = ['/login', '/auth', '/privacidad']
+const PUBLIC_PATHS = ['/login', '/auth', '/privacidad', '/reset-password']
 const ROLES_VALIDOS: Rol[] = ['admin', 'gestor', 'qf']
 
 interface PerfilActual {
