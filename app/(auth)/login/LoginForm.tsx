@@ -12,6 +12,8 @@ export default function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [aviso, setAviso] = useState<string | null>(null)
+  const [enviandoReset, setEnviandoReset] = useState(false)
   const [error, setError] = useState<string | null>(
     errorInicial === 'sin_acceso'
       ? 'Tu cuenta no tiene acceso al panel. Contacta al supervisor.'
@@ -37,6 +39,22 @@ export default function LoginForm() {
 
     router.push('/casos')
     router.refresh()
+  }
+
+  async function handleReset() {
+    setError(null)
+    setAviso(null)
+    if (!email.trim()) {
+      setError('Escribe tu correo para enviarte el enlace de recuperacion.')
+      return
+    }
+    setEnviandoReset(true)
+    const supabase = createClient()
+    await supabase.auth.resetPasswordForEmail(email.toLowerCase().trim(), {
+      redirectTo: 'https://simon-dashboard-ochre.vercel.app/reset-password',
+    })
+    setEnviandoReset(false)
+    setAviso('Si el correo esta registrado, te enviamos un enlace para restablecer tu contrasena. Revisa tu bandeja de entrada.')
   }
 
   return (
@@ -85,6 +103,21 @@ export default function LoginForm() {
         className="w-full bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium py-2 transition-colors"
       >
         {loading ? 'Ingresando…' : 'Ingresar'}
+      </button>
+
+      {aviso && (
+        <div className="text-sm text-green-700 bg-green-50 border border-green-200 px-3 py-2">
+          {aviso}
+        </div>
+      )}
+
+      <button
+        type="button"
+        onClick={handleReset}
+        disabled={enviandoReset}
+        className="w-full text-xs text-gray-500 hover:text-accent disabled:opacity-50 transition-colors"
+      >
+        {enviandoReset ? 'Enviando…' : '¿Olvidaste tu contraseña?'}
       </button>
     </form>
   )
