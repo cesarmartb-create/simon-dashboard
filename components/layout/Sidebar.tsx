@@ -57,7 +57,7 @@ export default function Sidebar({ usuario }: Props) {
       </nav>
 
       <div className="px-6 py-4 border-t border-white/10 text-xs text-white/50">
-        v0.1.0
+        v0.1 - {process.env.NEXT_PUBLIC_COMMIT_SHA?.slice(0, 7) ?? 'dev'}
       </div>
     </aside>
   )
