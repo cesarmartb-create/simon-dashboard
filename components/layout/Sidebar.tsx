@@ -57,7 +57,16 @@ export default function Sidebar({ usuario }: Props) {
       </nav>
 
       <div className="px-6 py-4 border-t border-white/10 text-xs text-white/50">
-        v0.1 - {process.env.NEXT_PUBLIC_COMMIT_SHA?.slice(0, 7) ?? 'dev'}
+        <div className="flex items-center gap-2 mb-1">
+          <img
+            src="/isotipo-grupo-baco.png"
+            alt="Grupo Baco"
+            className="h-5 w-auto"
+            style={{ filter: 'brightness(0) invert(1)', opacity: 0.7 }}
+          />
+          <span className="text-white/70 font-medium">Grupo Baco</span>
+        </div>
+        <div>v0.1 - {process.env.NEXT_PUBLIC_COMMIT_SHA?.slice(0, 7) ?? 'dev'}</div>
       </div>
     </aside>
   )

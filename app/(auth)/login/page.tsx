@@ -6,6 +6,11 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-canvas px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 text-center">
+          <img
+            src="/logo-grupo-baco.png"
+            alt="Grupo Baco"
+            className="h-14 mx-auto mb-6"
+          />
           <div className="text-2xl font-semibold text-gray-900">Panel Simón</div>
           <div className="mt-1 text-sm text-gray-500">
             Acceso para el equipo interno
