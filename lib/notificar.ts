@@ -205,7 +205,9 @@ export async function notificarEscalado(
   observacion: string,
   emailGestor: string
 ): Promise<void> {
+  const EXCLUIR_PILOTO = ['julia@grupobaco.cl', 'helmuth@grupobaco.cl']
   const destinatarios = Array.from(new Set(emailsPorRol('admin')))
+    .filter((e) => !EXCLUIR_PILOTO.includes(e))
 
   const tema = temaDe(caso)
   const colaborador = caso.colaborador_nombre ?? '—'
