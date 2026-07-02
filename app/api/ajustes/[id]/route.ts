@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { puedeGestionarAjustes } from '@/lib/ajustes'
+import { puedeGestionarAjustes, AREA_AJUSTES } from '@/lib/ajustes'
 import { notificarAjusteRealizado } from '@/lib/notificar'
 import type { Rol, Usuario } from '@/types/usuario'
 import type { AjusteInventario } from '@/types/ajuste'
@@ -164,7 +164,16 @@ export async function PATCH(
     return NextResponse.json({ error: errorUpdate.message }, { status: 500 })
   }
 
-  // Notificar al local que originó el ajuste (no bloquea: nunca lanza).
+  // Responsable del área al momento de enviar (la tabla de ajustes no lo guarda).
+  const { data: area } = await supabase
+    .from('areas_derivacion')
+    .select('responsable_correo')
+    .eq('cliente_id', usuario.cliente_id ?? 'grupobaco')
+    .eq('nombre', AREA_AJUSTES)
+    .eq('activo', true)
+    .maybeSingle<{ responsable_correo: string | null }>()
+
+  // Notificar: local que originó el ajuste + responsable del área + César.
   await notificarAjusteRealizado(
     {
       id: ajuste.id,
@@ -177,7 +186,8 @@ export async function PATCH(
       localCorreo: ajuste.local_correo,
     },
     usuario.email,
-    observacionCierre
+    observacionCierre,
+    area?.responsable_correo ?? null
   )
 
   return NextResponse.json({ ok: true })

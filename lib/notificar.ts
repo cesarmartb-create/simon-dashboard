@@ -384,8 +384,6 @@ export async function notificarNuevoCaso(
 
 // --- Correos de ajustes de inventario ---
 
-const CONTACTO_GRUPO = 'contacto@grupobaco.cl'
-
 interface AjusteCorreo {
   id: string
   local: string
@@ -417,7 +415,7 @@ export async function notificarNuevoAjuste(
 ): Promise<void> {
   const destinatarios = Array.from(
     new Set(
-      [responsableCorreo, CONTACTO_GRUPO].filter(
+      [responsableCorreo, 'cesar.martinez@grupobaco.cl'].filter(
         (e): e is string => typeof e === 'string' && e.includes('@')
       )
     )
@@ -468,20 +466,24 @@ export async function notificarNuevoAjuste(
 }
 
 /**
- * Notifica a la casilla del local que originó el ajuste cuando se marca
- * realizado, informando folio y monto final.
+ * Notifica cuando un ajuste se marca realizado, informando folio y monto
+ * final. Destinatarios: la casilla del local que originó el ajuste, el
+ * responsable del área y César (mismo patrón que el cierre de casos).
  * Nunca lanza: cualquier error se loguea y se descarta.
  */
 export async function notificarAjusteRealizado(
   ajuste: AjusteCorreo,
   cerradoPor: string,
-  observacionCierre: string | null
+  observacionCierre: string | null,
+  responsableCorreo: string | null
 ): Promise<void> {
   const destinatarios = Array.from(
     new Set(
-      [ajuste.localCorreo].filter(
-        (e): e is string => typeof e === 'string' && e.includes('@')
-      )
+      [
+        ajuste.localCorreo,
+        responsableCorreo,
+        'cesar.martinez@grupobaco.cl',
+      ].filter((e): e is string => typeof e === 'string' && e.includes('@'))
     )
   )
 
