@@ -49,3 +49,12 @@ export function promedioHoras(diferencias: number[]): number {
   const total = diferencias.reduce((a, b) => a + b, 0)
   return total / diferencias.length
 }
+
+export function formatCLP(monto: number | null | undefined): string {
+  if (monto === null || monto === undefined) return '—'
+  return new Intl.NumberFormat('es-CL', {
+    style: 'currency',
+    currency: 'CLP',
+    maximumFractionDigits: 0,
+  }).format(monto)
+}
