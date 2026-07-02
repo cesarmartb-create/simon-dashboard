@@ -106,14 +106,24 @@ export default async function AjustesPage({ searchParams }: Props) {
               {ajustes.length} ajuste{ajustes.length === 1 ? '' : 's'}
             </p>
           </div>
-          {puedeCrearAjuste(usuario) && (
-            <Link
-              href="/ajustes/nuevo"
-              className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 transition-colors"
-            >
-              Nuevo ajuste
-            </Link>
-          )}
+          <div className="flex items-center gap-3">
+            {usuario.rol === 'admin' && (
+              <Link
+                href="/ajustes/resumen"
+                className="border border-gray-300 text-sm px-4 py-2 text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Resumen
+              </Link>
+            )}
+            {puedeCrearAjuste(usuario) && (
+              <Link
+                href="/ajustes/nuevo"
+                className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 transition-colors"
+              >
+                Nuevo ajuste
+              </Link>
+            )}
+          </div>
         </div>
 
         <FiltrosAjustes
