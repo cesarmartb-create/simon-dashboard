@@ -466,3 +466,62 @@ export async function notificarNuevoAjuste(
     contexto: 'nuevo ajuste',
   })
 }
+
+/**
+ * Notifica a la casilla del local que originó el ajuste cuando se marca
+ * realizado, informando folio y monto final.
+ * Nunca lanza: cualquier error se loguea y se descarta.
+ */
+export async function notificarAjusteRealizado(
+  ajuste: AjusteCorreo,
+  cerradoPor: string,
+  observacionCierre: string | null
+): Promise<void> {
+  const destinatarios = Array.from(
+    new Set(
+      [ajuste.localCorreo].filter(
+        (e): e is string => typeof e === 'string' && e.includes('@')
+      )
+    )
+  )
+
+  const link = linkAjuste(ajuste.id)
+  const direccionLabel = ajuste.direccion === 'alta' ? 'Alta' : 'Baja'
+
+  const filas: [string, string][] = [
+    ['Local', ajuste.local],
+    ['Tipo', ajuste.tipoNombre],
+    ['Dirección', direccionLabel],
+    ['Cantidad SKU', String(ajuste.cantidadSku)],
+    ['Folio ajuste', ajuste.folioAjuste ?? '—'],
+    ['Monto final', formatCLP(ajuste.monto)],
+    ['Realizado por', nombreYEmail(cerradoPor)],
+  ]
+  if (observacionCierre) filas.push(['Observación', observacionCierre])
+
+  const intro = 'El ajuste de inventario de tu local fue realizado.'
+  const texto = [
+    intro,
+    '',
+    ...filas.map(([k, v]) => `${k}: ${v}`),
+    '',
+    `Ver el ajuste: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: 'Ajuste de inventario realizado',
+    headerColor: '#16a34a',
+    intro,
+    filas,
+    link,
+    linkTexto: 'Ver el ajuste',
+  })
+
+  await enviarCorreoCaso({
+    destinatarios,
+    subject: `Ajuste realizado — ${ajuste.local} — folio ${ajuste.folioAjuste ?? '—'}`,
+    texto,
+    html,
+    contexto: 'ajuste realizado',
+  })
+}
