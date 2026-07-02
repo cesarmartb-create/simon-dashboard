@@ -1,4 +1,5 @@
 import { emailsPorRol, getUsuario } from '@/lib/auth'
+import { formatCLP } from '@/lib/utils'
 
 const SIMON_URL = 'https://simon-62wy.onrender.com/notificar-colaborador'
 const SENDGRID_URL = 'https://api.sendgrid.com/v3/mail/send'
@@ -89,6 +90,7 @@ function construirHtmlCaso(opts: {
   intro: string
   filas: [string, string][]
   link: string
+  linkTexto?: string
 }): string {
   const filasHtml = opts.filas
     .map(([etiqueta, valor], i) => {
@@ -123,7 +125,7 @@ function construirHtmlCaso(opts: {
               <table role="presentation" cellpadding="0" cellspacing="0" style="margin:24px 0 8px;">
                 <tr>
                   <td style="background-color:#2563EB;">
-                    <a href="${escapeHtml(opts.link)}" style="display:inline-block;padding:11px 22px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;">Ver el caso &rarr;</a>
+                    <a href="${escapeHtml(opts.link)}" style="display:inline-block;padding:11px 22px;font-size:14px;font-weight:600;color:#ffffff;text-decoration:none;">${escapeHtml(opts.linkTexto ?? 'Ver el caso')} &rarr;</a>
                   </td>
                 </tr>
               </table>
@@ -377,5 +379,90 @@ export async function notificarNuevoCaso(
     texto,
     html,
     contexto: 'nuevo caso',
+  })
+}
+
+// --- Correos de ajustes de inventario ---
+
+const CONTACTO_GRUPO = 'contacto@grupobaco.cl'
+
+interface AjusteCorreo {
+  id: string
+  local: string
+  tipoNombre: string
+  direccion: string
+  cantidadSku: number
+  monto: number | null
+  folioOrigen?: string | null
+  folioReferencia?: string | null
+  observacion?: string | null
+  reportadoPor?: string | null
+  folioAjuste?: string | null
+  localCorreo?: string | null
+}
+
+function linkAjuste(id: string): string {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  return `${baseUrl}/ajustes/${id}`
+}
+
+/**
+ * Notifica por correo cuando se registra un nuevo ajuste de inventario.
+ * Destinatarios: responsable del área ajustes_inventario + contacto del grupo.
+ * Nunca lanza: cualquier error se loguea y se descarta.
+ */
+export async function notificarNuevoAjuste(
+  ajuste: AjusteCorreo,
+  responsableCorreo: string | null
+): Promise<void> {
+  const destinatarios = Array.from(
+    new Set(
+      [responsableCorreo, CONTACTO_GRUPO].filter(
+        (e): e is string => typeof e === 'string' && e.includes('@')
+      )
+    )
+  )
+
+  const link = linkAjuste(ajuste.id)
+  const direccionLabel = ajuste.direccion === 'alta' ? 'Alta' : 'Baja'
+
+  const filas: [string, string][] = [
+    ['Local', ajuste.local],
+    ['Tipo', ajuste.tipoNombre],
+    ['Dirección', direccionLabel],
+    ['Cantidad SKU', String(ajuste.cantidadSku)],
+    ['Monto', formatCLP(ajuste.monto)],
+  ]
+  if (ajuste.folioOrigen) filas.push(['Folio origen', ajuste.folioOrigen])
+  if (ajuste.folioReferencia)
+    filas.push(['Folio referencia', ajuste.folioReferencia])
+  if (ajuste.observacion) filas.push(['Observación', ajuste.observacion])
+  if (ajuste.reportadoPor) filas.push(['Reportado por', ajuste.reportadoPor])
+
+  const intro =
+    'Se registró un nuevo ajuste de inventario pendiente de realizar.'
+  const texto = [
+    intro,
+    '',
+    ...filas.map(([k, v]) => `${k}: ${v}`),
+    '',
+    `Ver el ajuste: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: 'Nuevo ajuste de inventario',
+    headerColor: '#2563EB',
+    intro,
+    filas,
+    link,
+    linkTexto: 'Ver el ajuste',
+  })
+
+  await enviarCorreoCaso({
+    destinatarios,
+    subject: `Nuevo ajuste de inventario — ${ajuste.local} — ${ajuste.tipoNombre} (${direccionLabel})`,
+    texto,
+    html,
+    contexto: 'nuevo ajuste',
   })
 }
