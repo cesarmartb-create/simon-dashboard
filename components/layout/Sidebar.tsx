@@ -15,6 +15,7 @@ const ITEMS: { href: string; label: string; roles: Rol[] }[] = [
     label: 'Casos',
     roles: ['admin', 'gestor', 'qf'],
   },
+  { href: '/ajustes', label: 'Ajustes', roles: ['admin', 'gestor', 'qf'] },
   { href: '/metricas', label: 'Métricas', roles: ['admin'] },
   { href: '/equipo', label: 'Equipo', roles: ['admin'] },
   {
