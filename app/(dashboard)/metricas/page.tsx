@@ -1,6 +1,7 @@
 import Header from '@/components/layout/Header'
 import KPICard from '@/components/metricas/KPICard'
 import DistribucionEstados from '@/components/metricas/DistribucionEstados'
+import SeccionAjustes from '@/components/metricas/SeccionAjustes'
 import { requireVistaGlobal } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
 import { ESTADOS, type Caso, type EstadoCaso } from '@/types/caso'
@@ -91,6 +92,8 @@ export default async function MetricasPage() {
             <CategoriaList casos={casos} />
           </div>
         </div>
+
+        <SeccionAjustes usuario={usuario} />
       </main>
     </>
   )
