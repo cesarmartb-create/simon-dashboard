@@ -2,8 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getUsuarioActual } from '@/lib/sesion'
-import { puedeCrearAjuste, AREA_AJUSTES } from '@/lib/ajustes'
-import { notificarNuevoAjuste } from '@/lib/notificar'
+import { puedeCrearAjuste } from '@/lib/ajustes'
 import type { DireccionAjuste } from '@/types/ajuste'
 
 interface CrearAjusteInput {
@@ -21,6 +20,7 @@ interface CrearAjusteInput {
 interface CrearAjusteResult {
   ok: boolean
   ajusteId?: string
+  clienteId?: string
   error?: string
 }
 
@@ -87,17 +87,6 @@ export async function crearAjuste(
       ? input.folioReferencia?.trim() || null
       : null
 
-  // Responsable del área: siempre desde areas_derivacion, nunca hardcodeado.
-  const { data: area } = await supabase
-    .from('areas_derivacion')
-    .select('responsable_correo')
-    .eq('cliente_id', usuario.cliente_id)
-    .eq('nombre', AREA_AJUSTES)
-    .eq('activo', true)
-    .maybeSingle<{ responsable_correo: string | null }>()
-
-  const responsableCorreo = area?.responsable_correo ?? null
-
   const { data: ajuste, error } = await supabase
     .from('ajustes_inventario')
     .insert({
@@ -124,22 +113,11 @@ export async function crearAjuste(
     }
   }
 
-  // Notificar (no bloquea: notificarNuevoAjuste nunca lanza).
-  await notificarNuevoAjuste(
-    {
-      id: ajuste.id,
-      local,
-      tipoNombre: tipo.nombre,
-      direccion: input.direccion,
-      cantidadSku: input.cantidadSku,
-      monto: input.monto,
-      folioOrigen: input.folioOrigen?.trim() || null,
-      folioReferencia,
-      observacion: input.observacion?.trim() || null,
-      reportadoPor: input.reportadoPor,
-    },
-    responsableCorreo
-  )
-
-  return { ok: true, ajusteId: ajuste.id }
+  // El correo de nuevo ajuste se envia desde el cliente (notificarAjusteCreado)
+  // despues de subir los adjuntos, para que el conteo de archivos sea correcto.
+  return {
+    ok: true,
+    ajusteId: ajuste.id,
+    clienteId: usuario.cliente_id ?? undefined,
+  }
 }

@@ -3,10 +3,13 @@ import { notFound } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import EstadoAjusteBadge from '@/components/ajustes/EstadoAjusteBadge'
 import AccionesAjuste from '@/components/ajustes/AccionesAjuste'
+import AdjuntosPanel from '@/components/adjuntos/AdjuntosPanel'
 import { getUsuarioActual } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
 import { puedeVerAjustes, puedeGestionarAjustes } from '@/lib/ajustes'
+import { nombreDesdeEmail } from '@/lib/auth'
 import { formatFecha, formatCLP } from '@/lib/utils'
+import { ADJUNTOS_BUCKET, type Adjunto, type AdjuntoConUrl } from '@/lib/adjuntos'
 import { DIRECCION_AJUSTE_LABEL } from '@/types/ajuste'
 import type { AjusteConTipo } from '@/components/ajustes/AjustesTabla'
 
@@ -47,6 +50,26 @@ export default async function AjusteDetallePage({ params }: Props) {
   }
 
   const gestiona = puedeGestionarAjustes(usuario)
+
+  const { data: adjuntosData } = await supabase
+    .from('adjuntos')
+    .select('*')
+    .eq('ajuste_id', params.id)
+    .order('created_at', { ascending: true })
+
+  // URLs firmadas server-side (1 hora) para ver/descargar los archivos privados.
+  const adjuntos: AdjuntoConUrl[] = await Promise.all(
+    ((adjuntosData ?? []) as Adjunto[]).map(async (a) => {
+      const { data: firma } = await supabase.storage
+        .from(ADJUNTOS_BUCKET)
+        .createSignedUrl(a.ruta, 3600)
+      return {
+        ...a,
+        url: firma?.signedUrl ?? null,
+        subido_por_nombre: a.subido_por ? nombreDesdeEmail(a.subido_por) : null,
+      }
+    })
+  )
 
   return (
     <>
@@ -178,6 +201,14 @@ export default async function AjusteDetallePage({ params }: Props) {
                 </dl>
               </section>
             )}
+
+            <AdjuntosPanel
+              entidad="ajustes"
+              entidadId={ajuste.id}
+              clienteId={ajuste.cliente_id}
+              adjuntos={adjuntos}
+              esAdmin={usuario.rol === 'admin'}
+            />
           </div>
 
           {gestiona && ajuste.estado === 'pendiente' && (

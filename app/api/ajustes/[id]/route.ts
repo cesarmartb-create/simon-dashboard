@@ -173,6 +173,12 @@ export async function PATCH(
     .eq('activo', true)
     .maybeSingle<{ responsable_correo: string | null }>()
 
+  // Conteo real de adjuntos para la linea "Incluye N archivo(s)" del correo.
+  const { count: numAdjuntos } = await supabase
+    .from('adjuntos')
+    .select('id', { count: 'exact', head: true })
+    .eq('ajuste_id', params.id)
+
   // Notificar: local que originó el ajuste + responsable del área + César.
   await notificarAjusteRealizado(
     {
@@ -187,7 +193,8 @@ export async function PATCH(
     },
     usuario.email,
     observacionCierre,
-    area?.responsable_correo ?? null
+    area?.responsable_correo ?? null,
+    numAdjuntos ?? 0
   )
 
   return NextResponse.json({ ok: true })

@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { crearAjuste } from '@/app/(dashboard)/ajustes/nuevo/actions'
+import AdjuntosInput from '@/components/adjuntos/AdjuntosInput'
+import {
+  registrarAdjuntos,
+  notificarAjusteCreado,
+} from '@/components/adjuntos/actions'
+import { subirAdjuntos } from '@/lib/adjuntos'
 import type { DireccionAjuste } from '@/types/ajuste'
 
 interface TipoOpcion {
@@ -41,6 +47,10 @@ export default function NuevoAjusteForm({
   const [observacion, setObservacion] = useState('')
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [adjuntos, setAdjuntos] = useState<File[]>([])
+  const [creado, setCreado] = useState<{ id: string; fallidos: string[] } | null>(
+    null
+  )
 
   const localCodigo = local.split(' — ')[0].trim()
 
@@ -83,6 +93,26 @@ export default function NuevoAjusteForm({
             ← Volver a ajustes
           </Link>
         </div>
+      </div>
+    )
+  }
+
+  if (creado) {
+    return (
+      <div className="max-w-2xl space-y-4">
+        <div className="text-sm text-green-800 bg-green-50 border border-green-200 px-3 py-2">
+          El ajuste se creó correctamente.
+        </div>
+        <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
+          No se pudieron subir estos archivos: {creado.fallidos.join(', ')}.
+          Puedes intentar agregarlos de nuevo desde el detalle del ajuste.
+        </div>
+        <Link
+          href={`/ajustes/${creado.id}`}
+          className="inline-block bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 transition-colors"
+        >
+          Ir al ajuste →
+        </Link>
       </div>
     )
   }
@@ -135,14 +165,53 @@ export default function NuevoAjusteForm({
       observacion: observacion.trim() || null,
     })
 
-    setGuardando(false)
-
     if (!resultado.ok || !resultado.ajusteId) {
+      setGuardando(false)
       setError(resultado.error ?? 'No se pudo crear el ajuste.')
       return
     }
 
-    router.push(`/ajustes/${resultado.ajusteId}`)
+    const ajusteId = resultado.ajusteId
+    const clienteId = resultado.clienteId ?? ''
+
+    // Subir adjuntos (si hay) despues de crear el ajuste. Si algo falla, el
+    // ajuste ya existe y no se bloquea: se acumulan los archivos que fallaron.
+    let fallidos: string[] = []
+    if (adjuntos.length > 0 && clienteId) {
+      const r = await subirAdjuntos(supabase, {
+        clienteId,
+        entidad: 'ajustes',
+        entidadId: ajusteId,
+        archivos: adjuntos,
+      })
+      fallidos = r.fallidos
+      if (r.subidos.length > 0) {
+        const reg = await registrarAdjuntos({
+          entidad: 'ajustes',
+          entidadId: ajusteId,
+          archivos: r.subidos,
+        })
+        if (!reg.ok) fallidos = adjuntos.map((f) => f.name)
+      }
+    }
+
+    // El correo sale SIEMPRE una vez creado el ajuste, con el conteo real de
+    // adjuntos registrados (aunque sea 0). Best-effort: un error de red no
+    // debe impedir continuar al detalle.
+    try {
+      await notificarAjusteCreado(ajusteId)
+    } catch {
+      // el correo es best-effort; el ajuste ya quedo creado
+    }
+
+    setGuardando(false)
+
+    if (fallidos.length > 0) {
+      setCreado({ id: ajusteId, fallidos })
+      return
+    }
+
+    router.push(`/ajustes/${ajusteId}`)
     router.refresh()
   }
 
@@ -319,6 +388,12 @@ export default function NuevoAjusteForm({
           className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent resize-none"
         />
       </div>
+
+      <AdjuntosInput
+        archivos={adjuntos}
+        onChange={setAdjuntos}
+        disabled={guardando}
+      />
 
       {error && (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">
