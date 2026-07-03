@@ -324,7 +324,8 @@ export async function notificarCierre(
 export async function notificarNuevoCaso(
   caso: CasoCorreo,
   reportadoPor: string | null,
-  responsableCorreo: string | null
+  responsableCorreo: string | null,
+  numAdjuntos = 0
 ): Promise<void> {
   const CESAR = 'cesar.martinez@grupobaco.cl'
   const destinatarios = Array.from(
@@ -346,6 +347,9 @@ export async function notificarNuevoCaso(
     ['Tema', tema],
     ['Consulta', caso.consulta ?? '—'],
   ]
+  if (numAdjuntos > 0) {
+    filas.push(['Adjuntos', `Incluye ${numAdjuntos} archivo(s) adjunto(s)`])
+  }
   if (sinResponsable) {
     filas.push(['Atención', 'Esta categoría no tiene responsable asignado. Revisar configuración.'])
   }
@@ -354,16 +358,19 @@ export async function notificarNuevoCaso(
     ? 'Entró una solicitud nueva pero su categoría no tiene responsable asignado. Requiere revisión.'
     : 'Entró una solicitud nueva desde el portal.'
 
-  const texto = [
+  const lineasTexto = [
     intro,
     '',
     `Reportado por: ${reporta}`,
     `Local: ${local}`,
     `Tema: ${tema}`,
     `Consulta: ${caso.consulta ?? '—'}`,
-    '',
-    `Ver el caso: ${link}`,
-  ].join('\n')
+  ]
+  if (numAdjuntos > 0) {
+    lineasTexto.push(`Incluye ${numAdjuntos} archivo(s) adjunto(s)`)
+  }
+  lineasTexto.push('', `Ver el caso: ${link}`)
+  const texto = lineasTexto.join('\n')
 
   const html = construirHtmlCaso({
     titulo: sinResponsable ? 'Solicitud nueva sin responsable' : 'Solicitud nueva',
@@ -411,7 +418,8 @@ function linkAjuste(id: string): string {
  */
 export async function notificarNuevoAjuste(
   ajuste: AjusteCorreo,
-  responsableCorreo: string | null
+  responsableCorreo: string | null,
+  numAdjuntos = 0
 ): Promise<void> {
   const destinatarios = Array.from(
     new Set(
@@ -436,6 +444,8 @@ export async function notificarNuevoAjuste(
     filas.push(['Folio referencia', ajuste.folioReferencia])
   if (ajuste.observacion) filas.push(['Observación', ajuste.observacion])
   if (ajuste.reportadoPor) filas.push(['Reportado por', ajuste.reportadoPor])
+  if (numAdjuntos > 0)
+    filas.push(['Adjuntos', `Incluye ${numAdjuntos} archivo(s) adjunto(s)`])
 
   const intro =
     'Se registró un nuevo ajuste de inventario pendiente de realizar.'
@@ -475,7 +485,8 @@ export async function notificarAjusteRealizado(
   ajuste: AjusteCorreo,
   cerradoPor: string,
   observacionCierre: string | null,
-  responsableCorreo: string | null
+  responsableCorreo: string | null,
+  numAdjuntos = 0
 ): Promise<void> {
   const destinatarios = Array.from(
     new Set(
@@ -500,6 +511,8 @@ export async function notificarAjusteRealizado(
     ['Realizado por', nombreYEmail(cerradoPor)],
   ]
   if (observacionCierre) filas.push(['Observación', observacionCierre])
+  if (numAdjuntos > 0)
+    filas.push(['Adjuntos', `Incluye ${numAdjuntos} archivo(s) adjunto(s)`])
 
   const intro = 'El ajuste de inventario de tu local fue realizado.'
   const texto = [
