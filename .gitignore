@@ -21,3 +21,11 @@ next-env.d.ts
 tsconfig.tsbuildinfo
 
 .claude/
+
+# Backups y documentos locales (no versionar)
+*.bak
+*.bak2
+*.bak3
+*.hoy
+*.docx
+*.pdf
