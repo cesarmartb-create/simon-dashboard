@@ -4,10 +4,12 @@ import Header from '@/components/layout/Header'
 import EstadoBadge from '@/components/casos/EstadoBadge'
 import TimelineEventos from '@/components/casos/TimelineEventos'
 import AccionesCaso from '@/components/casos/AccionesCaso'
+import AdjuntosPanel from '@/components/adjuntos/AdjuntosPanel'
 import { getUsuarioActual } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
-import { gestionaCasosPropios } from '@/lib/auth'
+import { gestionaCasosPropios, nombreDesdeEmail } from '@/lib/auth'
 import { formatFecha } from '@/lib/utils'
+import { ADJUNTOS_BUCKET, type Adjunto, type AdjuntoConUrl } from '@/lib/adjuntos'
 import type { Caso, Evento } from '@/types/caso'
 
 interface Props {
@@ -44,6 +46,26 @@ export default async function CasoDetallePage({ params }: Props) {
     .select('*')
     .eq('caso_id', params.id)
     .order('created_at', { ascending: true })
+
+  const { data: adjuntosData } = await supabase
+    .from('adjuntos')
+    .select('*')
+    .eq('caso_id', params.id)
+    .order('created_at', { ascending: true })
+
+  // URLs firmadas server-side (1 hora) para ver/descargar los archivos privados.
+  const adjuntos: AdjuntoConUrl[] = await Promise.all(
+    ((adjuntosData ?? []) as Adjunto[]).map(async (a) => {
+      const { data: firma } = await supabase.storage
+        .from(ADJUNTOS_BUCKET)
+        .createSignedUrl(a.ruta, 3600)
+      return {
+        ...a,
+        url: firma?.signedUrl ?? null,
+        subido_por_nombre: a.subido_por ? nombreDesdeEmail(a.subido_por) : null,
+      }
+    })
+  )
 
   return (
     <>
@@ -165,6 +187,14 @@ export default async function CasoDetallePage({ params }: Props) {
               </h3>
               <TimelineEventos eventos={(eventos ?? []) as Evento[]} />
             </section>
+
+            <AdjuntosPanel
+              entidad="casos"
+              entidadId={caso.id}
+              clienteId={caso.cliente_id ?? ''}
+              adjuntos={adjuntos}
+              esAdmin={usuario.rol === 'admin'}
+            />
           </div>
 
           {usuario.rol !== 'qf' && (

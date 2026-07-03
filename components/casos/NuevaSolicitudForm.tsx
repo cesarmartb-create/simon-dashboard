@@ -5,6 +5,12 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/client'
 import { crearCaso } from '@/app/(dashboard)/casos/nuevo/actions'
+import AdjuntosInput from '@/components/adjuntos/AdjuntosInput'
+import {
+  registrarAdjuntos,
+  notificarCasoCreado,
+} from '@/components/adjuntos/actions'
+import { subirAdjuntos } from '@/lib/adjuntos'
 
 interface Props {
   clienteId: string
@@ -30,6 +36,10 @@ export default function NuevaSolicitudForm({ clienteId, local }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [qfs, setQfs] = useState<{ nombre: string }[]>([])
   const [reportadoPor, setReportadoPor] = useState('')
+  const [adjuntos, setAdjuntos] = useState<File[]>([])
+  const [creado, setCreado] = useState<{ id: string; fallidos: string[] } | null>(
+    null
+  )
 
   const localCodigo = local.split(' — ')[0].trim()
 
@@ -68,6 +78,26 @@ export default function NuevaSolicitudForm({ clienteId, local }: Props) {
     )
   }
 
+  if (creado) {
+    return (
+      <div className="max-w-2xl space-y-4">
+        <div className="text-sm text-green-800 bg-green-50 border border-green-200 px-3 py-2">
+          El caso se creó correctamente.
+        </div>
+        <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
+          No se pudieron subir estos archivos: {creado.fallidos.join(', ')}.
+          Puedes intentar agregarlos de nuevo desde el detalle del caso.
+        </div>
+        <Link
+          href={`/casos/${creado.id}`}
+          className="inline-block bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 transition-colors"
+        >
+          Ir al caso →
+        </Link>
+      </div>
+    )
+  }
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!consulta.trim()) return
@@ -85,14 +115,52 @@ export default function NuevaSolicitudForm({ clienteId, local }: Props) {
       colaboradorNombre: colaboradorNombre.trim() || null,
     })
 
-    setGuardando(false)
-
     if (!resultado.ok || !resultado.casoId) {
+      setGuardando(false)
       setError(resultado.error ?? 'No se pudo crear el caso.')
       return
     }
 
-    router.push(`/casos/${resultado.casoId}`)
+    const casoId = resultado.casoId
+
+    // Subir adjuntos (si hay) despues de crear el caso. Si algo falla, el caso
+    // ya existe y no se bloquea: se acumulan los archivos que no se pudieron subir.
+    let fallidos: string[] = []
+    if (adjuntos.length > 0) {
+      const r = await subirAdjuntos(supabase, {
+        clienteId,
+        entidad: 'casos',
+        entidadId: casoId,
+        archivos: adjuntos,
+      })
+      fallidos = r.fallidos
+      if (r.subidos.length > 0) {
+        const reg = await registrarAdjuntos({
+          entidad: 'casos',
+          entidadId: casoId,
+          archivos: r.subidos,
+        })
+        if (!reg.ok) fallidos = adjuntos.map((f) => f.name)
+      }
+    }
+
+    // El correo sale SIEMPRE una vez creado el caso, con el conteo real de
+    // adjuntos registrados (aunque sea 0). Best-effort: un error de red no
+    // debe impedir continuar al detalle.
+    try {
+      await notificarCasoCreado(casoId)
+    } catch {
+      // el correo es best-effort; el caso ya quedo creado
+    }
+
+    setGuardando(false)
+
+    if (fallidos.length > 0) {
+      setCreado({ id: casoId, fallidos })
+      return
+    }
+
+    router.push(`/casos/${casoId}`)
     router.refresh()
   }
 
@@ -170,6 +238,12 @@ export default function NuevaSolicitudForm({ clienteId, local }: Props) {
           className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
         />
       </div>
+
+      <AdjuntosInput
+        archivos={adjuntos}
+        onChange={setAdjuntos}
+        disabled={guardando}
+      />
 
       {error && (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">

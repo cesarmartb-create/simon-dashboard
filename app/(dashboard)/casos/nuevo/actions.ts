@@ -2,7 +2,6 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getUsuarioActual } from '@/lib/sesion'
-import { notificarNuevoCaso } from '@/lib/notificar'
 
 interface CrearCasoInput {
   categoria: string
@@ -72,19 +71,7 @@ export async function crearCaso(
     }
   }
 
-  // Notificar (no bloquea: notificarNuevoCaso nunca lanza).
-  await notificarNuevoCaso(
-    {
-      id: caso.id,
-      colaborador_nombre: caso.colaborador_nombre,
-      local: caso.local,
-      categoria: caso.categoria,
-      consulta: caso.consulta,
-      responsable: caso.responsable,
-    },
-    input.reportadoPor,
-    responsableCorreo
-  )
-
+  // El correo de solicitud nueva se envia desde el cliente (notificarCasoCreado)
+  // despues de subir los adjuntos, para que el conteo de archivos sea correcto.
   return { ok: true, casoId: caso.id }
 }
