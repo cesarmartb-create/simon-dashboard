@@ -2,6 +2,7 @@ import Link from 'next/link'
 import Header from '@/components/layout/Header'
 import RendicionesTabla from '@/components/cajachica/RendicionesTabla'
 import FiltrosRendiciones from '@/components/cajachica/FiltrosRendiciones'
+import InstruccionesPanel from '@/components/cajachica/InstruccionesPanel'
 import { getUsuarioActual } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -41,6 +42,12 @@ export default async function CajaChicaPage({ searchParams }: Props) {
 
   const supabase = createClient()
   const clienteId = usuario.cliente_id as string
+
+  const { data: config } = await supabase
+    .from('configuracion_cliente')
+    .select('instrucciones_caja_chica')
+    .eq('cliente_id', clienteId)
+    .maybeSingle<{ instrucciones_caja_chica: string | null }>()
 
   let query = supabase
     .from('rendiciones_caja_chica')
@@ -106,6 +113,8 @@ export default async function CajaChicaPage({ searchParams }: Props) {
     <>
       <Header usuario={usuario} titulo="Caja chica" />
       <main className="flex-1 p-8 overflow-y-auto">
+        <InstruccionesPanel texto={config?.instrucciones_caja_chica ?? null} />
+
         <div className="mb-6 flex items-center justify-between">
           <div>
             <h2 className="text-xl font-semibold text-gray-900">

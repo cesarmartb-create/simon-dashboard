@@ -5,6 +5,7 @@ import EstadoRendicionBadge from '@/components/cajachica/EstadoRendicionBadge'
 import GastosSection from '@/components/cajachica/GastosSection'
 import type { GastoConTipo } from '@/components/cajachica/GastosTabla'
 import AccionesRendicion from '@/components/cajachica/AccionesRendicion'
+import InstruccionesPanel from '@/components/cajachica/InstruccionesPanel'
 import AdjuntosPanel from '@/components/adjuntos/AdjuntosPanel'
 import { getUsuarioActual } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
@@ -122,6 +123,12 @@ export default async function RendicionDetallePage({ params }: Props) {
     .order('orden', { ascending: true })
   const tipos = (tiposData ?? []) as { id: string; nombre: string }[]
 
+  const { data: config } = await supabase
+    .from('configuracion_cliente')
+    .select('instrucciones_caja_chica')
+    .eq('cliente_id', clienteId)
+    .maybeSingle<{ instrucciones_caja_chica: string | null }>()
+
   return (
     <>
       <Header usuario={usuario} titulo="Detalle de rendición" />
@@ -134,6 +141,8 @@ export default async function RendicionDetallePage({ params }: Props) {
             ← Volver a caja chica
           </Link>
         </div>
+
+        <InstruccionesPanel texto={config?.instrucciones_caja_chica ?? null} />
 
         <div className="mb-6 flex items-start justify-between gap-4">
           <div>
