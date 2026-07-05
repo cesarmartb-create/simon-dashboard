@@ -63,6 +63,10 @@ export default function Sidebar({ usuario }: Props) {
           alt="Grupo Baco"
           className="h-12 w-auto mb-2 opacity-90"
         />
+        <div className="flex items-center gap-1.5 mb-1 text-white/40">
+          <img src="/budo-symbol-cream.svg" alt="" className="h-3.5 w-3.5 opacity-70" />
+          <span>por Budo AI</span>
+        </div>
         <div>v0.1 - {process.env.NEXT_PUBLIC_COMMIT_SHA?.slice(0, 7) ?? 'dev'}</div>
       </div>
     </aside>

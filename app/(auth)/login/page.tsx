@@ -27,6 +27,11 @@ export default function LoginPage() {
           alt="Grupo Baco"
           className="h-16 mx-auto mt-10"
         />
+
+        <div className="mt-6 flex items-center justify-center gap-1.5 text-xs text-gray-400">
+          <img src="/budo-symbol.svg" alt="" className="h-3.5 w-3.5" />
+          <span>por Budo AI</span>
+        </div>
       </div>
     </div>
   )
