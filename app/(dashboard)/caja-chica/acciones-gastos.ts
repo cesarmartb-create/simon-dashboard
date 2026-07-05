@@ -3,7 +3,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { getUsuarioActual } from '@/lib/sesion'
 import type { SupabaseClient } from '@supabase/supabase-js'
-import type { FormaPago } from '@/types/cajachica'
+import {
+  TIPOS_DOCUMENTO,
+  type FormaPago,
+  type TipoDocumento,
+} from '@/types/cajachica'
 
 interface AgregarGastoInput {
   rendicionId: string
@@ -14,6 +18,7 @@ interface AgregarGastoInput {
   tipoGastoId: string | null
   formaPago: FormaPago
   nDocumento: string | null
+  tipoDocumento: TipoDocumento
 }
 
 interface AgregarGastoResult {
@@ -24,6 +29,15 @@ interface AgregarGastoResult {
 }
 
 const FORMAS: FormaPago[] = ['efectivo', 'tarjeta', 'transferencia']
+
+/** N° de documento efectivo: null si el gasto no lleva documento. */
+function docEfectivo(
+  tipoDocumento: TipoDocumento,
+  nDocumento: string | null
+): string | null {
+  if (tipoDocumento === 'sin_documento') return null
+  return nDocumento?.trim() || null
+}
 
 /**
  * Carga la rendicion validando cliente y que sea editable por el usuario:
@@ -104,6 +118,9 @@ export async function agregarGasto(
   if (!FORMAS.includes(input.formaPago)) {
     return { ok: false, error: 'Forma de pago inválida.' }
   }
+  if (!TIPOS_DOCUMENTO.includes(input.tipoDocumento)) {
+    return { ok: false, error: 'Tipo de documento inválido.' }
+  }
 
   // El tipo de gasto (si viene) debe ser del mismo cliente y estar activo.
   let tipoGastoId: string | null = null
@@ -130,7 +147,8 @@ export async function agregarGasto(
       descripcion: input.descripcion?.trim() || null,
       tipo_gasto_id: tipoGastoId,
       forma_pago: input.formaPago,
-      n_documento: input.nDocumento?.trim() || null,
+      tipo_documento: input.tipoDocumento,
+      n_documento: docEfectivo(input.tipoDocumento, input.nDocumento),
       estado: 'pendiente',
     })
     .select('id')
@@ -157,6 +175,7 @@ interface EditarGastoInput {
   tipoGastoId: string | null
   formaPago: FormaPago
   nDocumento: string | null
+  tipoDocumento: TipoDocumento
 }
 
 /**
@@ -199,6 +218,9 @@ export async function editarGasto(
   if (!FORMAS.includes(input.formaPago)) {
     return { ok: false, error: 'Forma de pago inválida.' }
   }
+  if (!TIPOS_DOCUMENTO.includes(input.tipoDocumento)) {
+    return { ok: false, error: 'Tipo de documento inválido.' }
+  }
 
   let tipoGastoIdEdit: string | null = null
   if (input.tipoGastoId) {
@@ -222,7 +244,8 @@ export async function editarGasto(
       descripcion: input.descripcion?.trim() || null,
       tipo_gasto_id: tipoGastoIdEdit,
       forma_pago: input.formaPago,
-      n_documento: input.nDocumento?.trim() || null,
+      tipo_documento: input.tipoDocumento,
+      n_documento: docEfectivo(input.tipoDocumento, input.nDocumento),
     })
     .eq('id', input.gastoId)
     .eq('cliente_id', usuario.cliente_id)

@@ -7,7 +7,14 @@ import { agregarGasto, editarGasto } from '@/app/(dashboard)/caja-chica/acciones
 import AdjuntosInput from '@/components/adjuntos/AdjuntosInput'
 import { registrarAdjuntos } from '@/components/adjuntos/actions'
 import { subirAdjuntos } from '@/lib/adjuntos'
-import { FORMAS_PAGO, FORMA_PAGO_LABEL, type FormaPago } from '@/types/cajachica'
+import {
+  FORMAS_PAGO,
+  FORMA_PAGO_LABEL,
+  TIPOS_DOCUMENTO,
+  TIPO_DOCUMENTO_LABEL,
+  type FormaPago,
+  type TipoDocumento,
+} from '@/types/cajachica'
 import type { GastoConTipo } from './GastosTabla'
 
 interface TipoOpcion {
@@ -40,6 +47,7 @@ export default function GastoForm({
   const [descripcion, setDescripcion] = useState('')
   const [tipoGastoId, setTipoGastoId] = useState('')
   const [formaPago, setFormaPago] = useState<FormaPago>('efectivo')
+  const [tipoDocumento, setTipoDocumento] = useState<TipoDocumento>('boleta')
   const [nDocumento, setNDocumento] = useState('')
   const [boleta, setBoleta] = useState<File[]>([])
   const [guardando, setGuardando] = useState(false)
@@ -55,6 +63,7 @@ export default function GastoForm({
       setDescripcion(gastoEditar.descripcion ?? '')
       setTipoGastoId(gastoEditar.tipo_gasto_id ?? '')
       setFormaPago(gastoEditar.forma_pago)
+      setTipoDocumento(gastoEditar.tipo_documento ?? 'sin_documento')
       setNDocumento(gastoEditar.n_documento ?? '')
       setBoleta([])
       setError(null)
@@ -72,6 +81,7 @@ export default function GastoForm({
     setDescripcion('')
     setTipoGastoId('')
     setFormaPago('efectivo')
+    setTipoDocumento('boleta')
     setNDocumento('')
     setBoleta([])
     setError(null)
@@ -102,6 +112,7 @@ export default function GastoForm({
       descripcion: descripcion.trim() || null,
       tipoGastoId: tipoGastoId || null,
       formaPago,
+      tipoDocumento,
       nDocumento: nDocumento.trim() || null,
     }
 
@@ -242,16 +253,44 @@ export default function GastoForm({
         </div>
         <div className="flex flex-col">
           <label className="text-xs font-medium text-gray-700 mb-1">
-            N° documento (opcional)
+            Tipo de documento
           </label>
-          <input
-            type="text"
-            value={nDocumento}
-            onChange={(e) => setNDocumento(e.target.value)}
-            placeholder="N° boleta / factura"
+          <select
+            value={tipoDocumento}
+            onChange={(e) => {
+              const v = e.target.value as TipoDocumento
+              setTipoDocumento(v)
+              if (v === 'sin_documento') setNDocumento('')
+            }}
             className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
-          />
+          >
+            {TIPOS_DOCUMENTO.map((td) => (
+              <option key={td} value={td}>
+                {TIPO_DOCUMENTO_LABEL[td]}
+              </option>
+            ))}
+          </select>
         </div>
+      </div>
+
+      <div className="flex flex-col">
+        <label className="text-xs font-medium text-gray-700 mb-1">
+          {tipoDocumento === 'sin_documento'
+            ? 'N° documento'
+            : 'N° documento (opcional)'}
+        </label>
+        <input
+          type="text"
+          value={nDocumento}
+          onChange={(e) => setNDocumento(e.target.value)}
+          disabled={tipoDocumento === 'sin_documento'}
+          placeholder={
+            tipoDocumento === 'sin_documento'
+              ? 'Sin documento'
+              : 'N° boleta / factura'
+          }
+          className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent disabled:bg-gray-100 disabled:text-gray-400"
+        />
       </div>
 
       <div className="flex flex-col">

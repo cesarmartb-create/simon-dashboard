@@ -6,6 +6,7 @@ import { eliminarGasto } from '@/app/(dashboard)/caja-chica/acciones-gastos'
 import {
   ESTADO_GASTO_LABEL,
   FORMA_PAGO_LABEL,
+  TIPO_DOCUMENTO_LABEL,
   type GastoCajaChica,
   type EstadoGasto,
 } from '@/types/cajachica'
@@ -145,7 +146,11 @@ export default function GastosTabla({
                     {FORMA_PAGO_LABEL[g.forma_pago] ?? g.forma_pago}
                   </td>
                   <td className="px-4 py-3 text-gray-500">
-                    {g.n_documento ?? '—'}
+                    {g.tipo_documento === 'sin_documento'
+                      ? '—'
+                      : `${TIPO_DOCUMENTO_LABEL[g.tipo_documento]}${
+                          g.n_documento ? ` ${g.n_documento}` : ''
+                        }`}
                   </td>
                   <td className="px-4 py-3">
                     {boletas.length === 0 ? (

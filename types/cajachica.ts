@@ -50,6 +50,20 @@ export const FORMA_PAGO_LABEL: Record<FormaPago, string> = {
   transferencia: 'Transferencia',
 }
 
+export type TipoDocumento = 'boleta' | 'factura' | 'sin_documento'
+
+export const TIPOS_DOCUMENTO: TipoDocumento[] = [
+  'boleta',
+  'factura',
+  'sin_documento',
+]
+
+export const TIPO_DOCUMENTO_LABEL: Record<TipoDocumento, string> = {
+  boleta: 'Boleta',
+  factura: 'Factura',
+  sin_documento: 'Sin documento',
+}
+
 export interface TipoGasto {
   id: string
   cliente_id: string
@@ -103,6 +117,7 @@ export interface GastoCajaChica {
   tipo_gasto_id: string | null
   forma_pago: FormaPago
   n_documento: string | null
+  tipo_documento: TipoDocumento
   centro_costo: string | null
   estado: EstadoGasto
   observacion_rechazo: string | null
