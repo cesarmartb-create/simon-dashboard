@@ -281,6 +281,14 @@ create policy gastos_delete on public.gastos_caja_chica
 --    adjuntos_select y adjuntos_insert con dos ramas OR nuevas.
 --    adjuntos_delete NO cambia (admin + cliente, ya es agnostico a la entidad).
 --    CAMBIO CONSCIENTE SOBRE PRODUCCION: re-crea 2 politicas vivas de adjuntos.
+--
+--    NOTA (debio detectarse aqui): adjuntos tiene ademas un CHECK preexistente
+--    (adjuntos_check) que exigia EXACTAMENTE UNO entre caso_id/ajuste_id. Con
+--    solo agregar las columnas gasto_id/rendicion_id ese check SIGUE bloqueando
+--    toda fila con los padres nuevos. El Paso 0 no lo capturo (miramos politicas
+--    y columnas, no constraints). Se corrige aparte en 05_fix_adjuntos_check.sql
+--    (num_nonnulls(caso_id, ajuste_id, gasto_id, rendicion_id) = 1). Sin el 05,
+--    subir boletas/comprobantes falla con violacion de adjuntos_check.
 -- =====================================================================
 alter table public.adjuntos add column if not exists gasto_id     uuid;
 alter table public.adjuntos add column if not exists rendicion_id uuid;
