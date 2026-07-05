@@ -15,6 +15,15 @@ interface Props {
   clienteId: string
 }
 
+/** Traduce el error de Postgres a un mensaje humano (unique de codigo). */
+function mensajeError(
+  err: { code?: string; message: string },
+  fallback: string
+): string {
+  if (err.code === '23505') return 'Ese codigo ya existe para este cliente.'
+  return `${fallback}: ${err.message}`
+}
+
 export default function TiposGastoTabla({ clienteId }: Props) {
   const supabase = createClient()
 
@@ -65,6 +74,9 @@ export default function TiposGastoTabla({ clienteId }: Props) {
   }
 
   function abrirEdicion(f: TipoGastoFila) {
+    // Carga SIEMPRE la fila clickeada y resetea cualquier estado previo.
+    setError(null)
+    setGuardando(false)
     setEditandoId(f.id)
     setCodigo(f.codigo)
     setNombre(f.nombre)
@@ -86,7 +98,7 @@ export default function TiposGastoTabla({ clienteId }: Props) {
 
       setGuardando(false)
       if (err) {
-        setError(`No se pudo actualizar el tipo: ${err.message}`)
+        setError(mensajeError(err, 'No se pudo actualizar el tipo'))
         return
       }
       setFilas((prev) =>
@@ -112,7 +124,7 @@ export default function TiposGastoTabla({ clienteId }: Props) {
 
     setGuardando(false)
     if (err) {
-      setError(`No se pudo agregar el tipo: ${err.message}`)
+      setError(mensajeError(err, 'No se pudo agregar el tipo'))
       return
     }
     setFilas((prev) => [...prev, data as TipoGastoFila])
