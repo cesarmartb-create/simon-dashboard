@@ -20,6 +20,11 @@ interface Props {
   clienteId: string
   adjuntos: AdjuntoConUrl[]
   esAdmin: boolean
+  // Solo lectura: muestra los adjuntos pero oculta subir/eliminar. Se usa para
+  // que el comprobante de pago sea VISIBLE a quien ve la rendicion sin poder
+  // modificarlo (la subida queda para admin/gestor).
+  soloLectura?: boolean
+  titulo?: string
 }
 
 /**
@@ -33,6 +38,8 @@ export default function AdjuntosPanel({
   clienteId,
   adjuntos,
   esAdmin,
+  soloLectura = false,
+  titulo = 'Adjuntos',
 }: Props) {
   const router = useRouter()
   const supabase = createClient()
@@ -90,7 +97,8 @@ export default function AdjuntosPanel({
   return (
     <section className="bg-white border border-gray-200 p-5">
       <h3 className="text-sm font-semibold text-gray-900 mb-4">
-        Adjuntos{adjuntos.length > 0 ? ` (${adjuntos.length})` : ''}
+        {titulo}
+        {adjuntos.length > 0 ? ` (${adjuntos.length})` : ''}
       </h3>
 
       {adjuntos.length === 0 ? (
@@ -142,6 +150,7 @@ export default function AdjuntosPanel({
               )}
 
               {esAdmin &&
+                !soloLectura &&
                 (confirmar === a.id ? (
                   <div className="flex items-center gap-3">
                     <button
@@ -172,28 +181,30 @@ export default function AdjuntosPanel({
         </ul>
       )}
 
-      <div className="border-t border-gray-100 pt-4 space-y-3">
-        <AdjuntosInput archivos={nuevos} onChange={setNuevos} disabled={subiendo} />
-        {nuevos.length > 0 && (
-          <button
-            onClick={handleSubir}
-            disabled={subiendo}
-            className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-4 py-2 transition-colors"
-          >
-            {subiendo ? 'Subiendo…' : `Subir ${nuevos.length} archivo(s)`}
-          </button>
-        )}
-        {aviso && (
-          <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
-            {aviso}
-          </div>
-        )}
-        {error && (
-          <div className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">
-            {error}
-          </div>
-        )}
-      </div>
+      {!soloLectura && (
+        <div className="border-t border-gray-100 pt-4 space-y-3">
+          <AdjuntosInput archivos={nuevos} onChange={setNuevos} disabled={subiendo} />
+          {nuevos.length > 0 && (
+            <button
+              onClick={handleSubir}
+              disabled={subiendo}
+              className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-4 py-2 transition-colors"
+            >
+              {subiendo ? 'Subiendo…' : `Subir ${nuevos.length} archivo(s)`}
+            </button>
+          )}
+          {aviso && (
+            <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
+              {aviso}
+            </div>
+          )}
+          {error && (
+            <div className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">
+              {error}
+            </div>
+          )}
+        </div>
+      )}
     </section>
   )
 }

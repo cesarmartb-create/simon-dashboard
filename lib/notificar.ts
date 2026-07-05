@@ -1,5 +1,9 @@
 import { emailsPorRol, getUsuario } from '@/lib/auth'
 import { formatCLP } from '@/lib/utils'
+import {
+  ESTADO_RENDICION_LABEL,
+  type EstadoRendicion,
+} from '@/types/cajachica'
 
 const SIMON_URL = 'https://simon-62wy.onrender.com/notificar-colaborador'
 const SENDGRID_URL = 'https://api.sendgrid.com/v3/mail/send'
@@ -538,5 +542,171 @@ export async function notificarAjusteRealizado(
     texto,
     html,
     contexto: 'ajuste realizado',
+  })
+}
+
+// --- Correos de caja chica ---
+
+interface RendicionCorreo {
+  id: string
+  local: string
+  periodo: string
+  numero: number
+  total: number
+  montoFondoSnapshot?: number | null
+  excedeFondo?: boolean
+  localCorreo?: string | null
+  reportadoPor?: string | null
+}
+
+function linkCajaChica(id: string): string {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  return `${baseUrl}/caja-chica/${id}`
+}
+
+/**
+ * Notifica cuando una rendicion se envia a revision (abierto -> en_revision).
+ * Destinatarios: responsable del area caja_chica + César. Si la rendicion
+ * excede el fondo, agrega una linea de alerta. Nunca lanza.
+ */
+export async function notificarRendicionEnviada(
+  rendicion: RendicionCorreo,
+  responsableCorreo: string | null,
+  numGastos = 0
+): Promise<void> {
+  const destinatarios = Array.from(
+    new Set(
+      [responsableCorreo, 'cesar.martinez@grupobaco.cl'].filter(
+        (e): e is string => typeof e === 'string' && e.includes('@')
+      )
+    )
+  )
+
+  const link = linkCajaChica(rendicion.id)
+
+  const filas: [string, string][] = [
+    ['Local', rendicion.local],
+    ['Periodo', rendicion.periodo],
+    ['N° rendición', String(rendicion.numero)],
+    ['Total', formatCLP(rendicion.total)],
+    [
+      'Fondo asignado',
+      rendicion.montoFondoSnapshot != null
+        ? formatCLP(rendicion.montoFondoSnapshot)
+        : 'Sin fondo',
+    ],
+  ]
+  if (numGastos > 0) filas.push(['Gastos', `${numGastos} gasto(s)`])
+  if (rendicion.reportadoPor) filas.push(['Reportado por', rendicion.reportadoPor])
+  if (rendicion.excedeFondo)
+    filas.push(['⚠ Alerta', 'La rendición excede el fondo asignado'])
+
+  const intro = rendicion.excedeFondo
+    ? 'Se envió una rendición de caja chica para revisión. Atención: excede el fondo asignado.'
+    : 'Se envió una rendición de caja chica para revisión.'
+  const texto = [
+    intro,
+    '',
+    ...filas.map(([k, v]) => `${k}: ${v}`),
+    '',
+    `Ver la rendición: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: 'Rendición de caja chica enviada',
+    headerColor: rendicion.excedeFondo ? '#d97706' : '#2563EB',
+    intro,
+    filas,
+    link,
+    linkTexto: 'Ver la rendición',
+  })
+
+  await enviarCorreoCaso({
+    destinatarios,
+    subject: `Rendición de caja chica enviada — ${rendicion.local} — ${rendicion.periodo}${
+      rendicion.excedeFondo ? ' (excede fondo)' : ''
+    }`,
+    texto,
+    html,
+    contexto: 'rendición enviada',
+  })
+}
+
+/**
+ * Notifica el resultado de la revision (aprobada / aprobada_parcial / rechazada).
+ * Destinatarios: casilla del local + responsable del area + César. Incluye el
+ * motivo cuando hubo rechazo. Nunca lanza.
+ */
+export async function notificarRendicionResuelta(
+  rendicion: RendicionCorreo,
+  estadoFinal: EstadoRendicion,
+  resueltoPor: string,
+  observacionCierre: string | null,
+  responsableCorreo: string | null,
+  aprobados = 0,
+  rechazados = 0
+): Promise<void> {
+  const destinatarios = Array.from(
+    new Set(
+      [
+        rendicion.localCorreo,
+        responsableCorreo,
+        'cesar.martinez@grupobaco.cl',
+      ].filter((e): e is string => typeof e === 'string' && e.includes('@'))
+    )
+  )
+
+  const link = linkCajaChica(rendicion.id)
+  const estadoLabel = ESTADO_RENDICION_LABEL[estadoFinal] ?? estadoFinal
+
+  const filas: [string, string][] = [
+    ['Local', rendicion.local],
+    ['Periodo', rendicion.periodo],
+    ['N° rendición', String(rendicion.numero)],
+    ['Resultado', estadoLabel],
+    ['Total aprobado', formatCLP(rendicion.total)],
+    ['Gastos aprobados', String(aprobados)],
+    ['Gastos rechazados', String(rechazados)],
+    ['Revisado por', nombreYEmail(resueltoPor)],
+  ]
+  if (observacionCierre) filas.push(['Motivo / observación', observacionCierre])
+
+  const intro =
+    estadoFinal === 'aprobada'
+      ? 'Tu rendición de caja chica fue aprobada.'
+      : estadoFinal === 'aprobada_parcial'
+        ? 'Tu rendición fue aprobada parcialmente; los gastos rechazados se arrastran a la siguiente rendición.'
+        : 'Tu rendición de caja chica fue rechazada.'
+
+  const headerColor =
+    estadoFinal === 'aprobada'
+      ? '#16a34a'
+      : estadoFinal === 'aprobada_parcial'
+        ? '#d97706'
+        : '#dc2626'
+
+  const texto = [
+    intro,
+    '',
+    ...filas.map(([k, v]) => `${k}: ${v}`),
+    '',
+    `Ver la rendición: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: `Rendición ${estadoLabel.toLowerCase()}`,
+    headerColor,
+    intro,
+    filas,
+    link,
+    linkTexto: 'Ver la rendición',
+  })
+
+  await enviarCorreoCaso({
+    destinatarios,
+    subject: `Rendición ${estadoLabel} — ${rendicion.local} — ${rendicion.periodo}`,
+    texto,
+    html,
+    contexto: 'rendición resuelta',
   })
 }

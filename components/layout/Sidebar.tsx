@@ -2,33 +2,51 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import type { Usuario, Rol } from '@/types/usuario'
+import type { Usuario } from '@/types/usuario'
 import { cn } from '@/lib/utils'
+import { puedeVerAjustes, AREA_AJUSTES } from '@/lib/ajustes'
+import { puedeVerCajaChica, AREA_CAJA_CHICA } from '@/lib/cajachica'
 
 interface Props {
   usuario: Usuario
 }
 
-const ITEMS: { href: string; label: string; roles: Rol[] }[] = [
-  {
-    href: '/casos',
-    label: 'Casos',
-    roles: ['admin', 'gestor', 'qf'],
-  },
-  { href: '/ajustes', label: 'Ajustes', roles: ['admin', 'gestor', 'qf'] },
-  { href: '/metricas', label: 'Métricas', roles: ['admin'] },
-  { href: '/equipo', label: 'Equipo', roles: ['admin'] },
+// Areas que "gobiernan" un modulo propio. El resto de las areas son de
+// categorias de casos.
+const AREAS_MODULO = [AREA_AJUSTES, AREA_CAJA_CHICA]
+
+/**
+ * Casos: admin y qf siempre; gestor si tiene alguna area (en areas ∪
+ * areas_supervisa) que NO sea de modulo (Ajustes/Caja chica).
+ * Ej: Maria Andrea (operaciones + supervisa ajustes) conserva Casos.
+ */
+function puedeVerCasos(usuario: Usuario): boolean {
+  if (usuario.rol === 'admin' || usuario.rol === 'qf') return true
+  const areas = [...(usuario.areas ?? []), ...(usuario.areas_supervisa ?? [])]
+  return usuario.rol === 'gestor' && areas.some((a) => !AREAS_MODULO.includes(a))
+}
+
+const ITEMS: {
+  href: string
+  label: string
+  visible: (u: Usuario) => boolean
+}[] = [
+  { href: '/casos', label: 'Casos', visible: puedeVerCasos },
+  { href: '/ajustes', label: 'Ajustes', visible: puedeVerAjustes },
+  { href: '/caja-chica', label: 'Caja chica', visible: puedeVerCajaChica },
+  { href: '/metricas', label: 'Métricas', visible: (u) => u.rol === 'admin' },
+  { href: '/equipo', label: 'Equipo', visible: (u) => u.rol === 'admin' },
   {
     href: '/configuracion',
     label: 'Configuración',
-    roles: ['admin'],
+    visible: (u) => u.rol === 'admin',
   },
 ]
 
 export default function Sidebar({ usuario }: Props) {
   const pathname = usePathname()
 
-  const visibles = ITEMS.filter((i) => i.roles.includes(usuario.rol))
+  const visibles = ITEMS.filter((i) => i.visible(usuario))
 
   return (
     <aside className="w-60 bg-sidebar text-white flex flex-col min-h-screen">

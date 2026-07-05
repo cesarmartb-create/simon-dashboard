@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { getUsuarioActual } from '@/lib/sesion'
 import { esAdmin } from '@/lib/auth'
 import { puedeVerAjustes, AREA_AJUSTES } from '@/lib/ajustes'
+import { puedeVerCajaChica } from '@/lib/cajachica'
 import { notificarNuevoCaso, notificarNuevoAjuste } from '@/lib/notificar'
 import {
   ADJUNTOS_BUCKET,
@@ -83,7 +84,7 @@ export async function registrarAdjuntos(
       return { ok: false, error: 'No tienes acceso a este caso.' }
     }
     clienteId = caso.cliente_id
-  } else {
+  } else if (input.entidad === 'ajustes') {
     if (!puedeVerAjustes(usuario)) {
       return { ok: false, error: 'No tienes acceso a este ajuste.' }
     }
@@ -99,6 +100,47 @@ export async function registrarAdjuntos(
       return { ok: false, error: 'No tienes acceso a este ajuste.' }
     }
     clienteId = ajuste.cliente_id
+  } else if (input.entidad === 'gastos') {
+    // Boleta de un gasto: valida cliente + local (qf) via la rendicion padre.
+    if (!puedeVerCajaChica(usuario)) {
+      return { ok: false, error: 'No tienes acceso a este gasto.' }
+    }
+    const { data: gasto } = await supabase
+      .from('gastos_caja_chica')
+      .select('id, cliente_id, rendiciones_caja_chica(local)')
+      .eq('id', input.entidadId)
+      .maybeSingle<{
+        id: string
+        cliente_id: string
+        rendiciones_caja_chica: { local: string } | null
+      }>()
+    if (!gasto || gasto.cliente_id !== clienteUsuario) {
+      return { ok: false, error: 'No tienes acceso a este gasto.' }
+    }
+    if (
+      usuario.rol === 'qf' &&
+      gasto.rendiciones_caja_chica?.local !== (usuario.local ?? '')
+    ) {
+      return { ok: false, error: 'No tienes acceso a este gasto.' }
+    }
+    clienteId = gasto.cliente_id
+  } else {
+    // Comprobante de transferencia: adjunto a la rendicion.
+    if (!puedeVerCajaChica(usuario)) {
+      return { ok: false, error: 'No tienes acceso a esta rendicion.' }
+    }
+    const { data: rendicion } = await supabase
+      .from('rendiciones_caja_chica')
+      .select('id, cliente_id, local')
+      .eq('id', input.entidadId)
+      .maybeSingle<{ id: string; cliente_id: string; local: string }>()
+    if (!rendicion || rendicion.cliente_id !== clienteUsuario) {
+      return { ok: false, error: 'No tienes acceso a esta rendicion.' }
+    }
+    if (usuario.rol === 'qf' && rendicion.local !== (usuario.local ?? '')) {
+      return { ok: false, error: 'No tienes acceso a esta rendicion.' }
+    }
+    clienteId = rendicion.cliente_id
   }
 
   // La ruta debe pertenecer a este registro (evita inyeccion de rutas).
@@ -113,6 +155,8 @@ export async function registrarAdjuntos(
     cliente_id: clienteId,
     caso_id: input.entidad === 'casos' ? input.entidadId : null,
     ajuste_id: input.entidad === 'ajustes' ? input.entidadId : null,
+    gasto_id: input.entidad === 'gastos' ? input.entidadId : null,
+    rendicion_id: input.entidad === 'rendiciones' ? input.entidadId : null,
     nombre_archivo: a.nombre_archivo,
     ruta: a.ruta,
     tamano_bytes: a.tamano_bytes,
