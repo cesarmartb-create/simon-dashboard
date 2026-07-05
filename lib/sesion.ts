@@ -24,6 +24,9 @@ interface PerfilActual {
  *  - email (auth.users)
  *  - nombre (mapa hardcodeado en lib/auth.ts, transitorio)
  *  - rol, cliente_id, local, areas (función SQL perfil_actual())
+ *  - areas_supervisa (función SQL perfil_areas_supervisa(), spec 2b): se pide
+ *    aparte porque perfil_actual() no se puede tocar (26 políticas dependen
+ *    de su tipo de retorno). Falla cerrado: si el RPC falla, queda sin supervisión.
  *
  * Envuelto en cache() de React para evitar múltiples RPC en la misma request.
  */
@@ -49,6 +52,14 @@ export const getUsuarioActual = cache(async (): Promise<Usuario> => {
     redirect('/login?error=rol_invalido')
   }
 
+  // Dimensión de supervisión (solo lectura) via helper aparte; falla cerrado.
+  const { data: areasSupervisa, error: errorSupervisa } = await supabase.rpc(
+    'perfil_areas_supervisa'
+  )
+  if (errorSupervisa) {
+    console.error('[sesion] perfil_areas_supervisa falló:', errorSupervisa)
+  }
+
   return {
     email: user.email.toLowerCase(),
     nombre: nombreDesdeEmail(user.email),
@@ -56,6 +67,8 @@ export const getUsuarioActual = cache(async (): Promise<Usuario> => {
     cliente_id: perfil.cliente_id,
     local: perfil.local,
     areas: perfil.areas,
+    // NULL del rpc (usuario sin fila / helper con cero filas) -> [] explicito.
+    areas_supervisa: (areasSupervisa as string[] | null) ?? [],
   }
 })
 
