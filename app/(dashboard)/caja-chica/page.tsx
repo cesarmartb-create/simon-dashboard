@@ -3,6 +3,9 @@ import Header from '@/components/layout/Header'
 import RendicionesTabla from '@/components/cajachica/RendicionesTabla'
 import FiltrosRendiciones from '@/components/cajachica/FiltrosRendiciones'
 import InstruccionesPanel from '@/components/cajachica/InstruccionesPanel'
+import ExportarCsvBoton, {
+  type ExportRow,
+} from '@/components/cajachica/ExportarCsvBoton'
 import { getUsuarioActual } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
 import {
@@ -11,7 +14,16 @@ import {
   saldoDisponible,
 } from '@/lib/cajachica'
 import { formatCLP } from '@/lib/utils'
-import type { RendicionCajaChica } from '@/types/cajachica'
+import {
+  ESTADO_GASTO_LABEL,
+  ESTADO_RENDICION_LABEL,
+  FORMA_PAGO_LABEL,
+  TIPO_DOCUMENTO_LABEL,
+  type RendicionCajaChica,
+  type EstadoGasto,
+  type FormaPago,
+  type TipoDocumento,
+} from '@/types/cajachica'
 
 interface Props {
   searchParams: {
@@ -66,6 +78,55 @@ export default async function CajaChicaPage({ searchParams }: Props) {
     ascending: false,
   })
   const rendiciones = (rows ?? []) as RendicionCajaChica[]
+
+  // Gastos de las rendiciones visibles (respeta RLS + filtros) para exportar CSV.
+  const rendicionIds = rendiciones.map((r) => r.id)
+  const rendPorId = new Map(rendiciones.map((r) => [r.id, r]))
+  let gastosExport: ExportRow[] = []
+  if (rendicionIds.length > 0) {
+    const { data: gastosData } = await supabase
+      .from('gastos_caja_chica')
+      .select(
+        'rendicion_id, fecha_gasto, monto, proveedor, descripcion, tipo_documento, n_documento, forma_pago, estado, centro_costo, tipos_gasto(nombre)'
+      )
+      .eq('cliente_id', clienteId)
+      .in('rendicion_id', rendicionIds)
+      .order('fecha_gasto', { ascending: true })
+
+    gastosExport = (gastosData ?? []).map((row) => {
+      const g = row as unknown as {
+        rendicion_id: string
+        fecha_gasto: string
+        monto: number | null
+        proveedor: string | null
+        descripcion: string | null
+        tipo_documento: TipoDocumento
+        n_documento: string | null
+        forma_pago: FormaPago
+        estado: EstadoGasto
+        centro_costo: string | null
+        tipos_gasto: { nombre: string } | null
+      }
+      const r = rendPorId.get(g.rendicion_id)
+      return {
+        periodo: r?.periodo ?? '',
+        numero_rendicion: r?.numero ?? '',
+        local: r?.local ?? '',
+        fecha_gasto: g.fecha_gasto,
+        tipo_gasto: g.tipos_gasto?.nombre ?? '',
+        proveedor: g.proveedor ?? '',
+        descripcion: g.descripcion ?? '',
+        tipo_documento:
+          TIPO_DOCUMENTO_LABEL[g.tipo_documento] ?? g.tipo_documento,
+        n_documento: g.n_documento ?? '',
+        forma_pago: FORMA_PAGO_LABEL[g.forma_pago] ?? g.forma_pago,
+        monto: Number(g.monto ?? 0),
+        estado_gasto: ESTADO_GASTO_LABEL[g.estado] ?? g.estado,
+        estado_rendicion: r ? ESTADO_RENDICION_LABEL[r.estado] ?? r.estado : '',
+        centro_costo: g.centro_costo ?? '',
+      }
+    })
+  }
 
   // Locales para el filtro (cualquier rol que ve mas de un local), de los datos.
   const puedeFiltrarLocal = usuario.rol !== 'qf'
@@ -124,14 +185,17 @@ export default async function CajaChicaPage({ searchParams }: Props) {
               {rendiciones.length} rendici{rendiciones.length === 1 ? 'ón' : 'ones'}
             </p>
           </div>
-          {puedeCrearRendicion(usuario) && (
-            <Link
-              href="/caja-chica/nueva"
-              className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 transition-colors"
-            >
-              Nueva rendición
-            </Link>
-          )}
+          <div className="flex items-center gap-3">
+            <ExportarCsvBoton filas={gastosExport} />
+            {puedeCrearRendicion(usuario) && (
+              <Link
+                href="/caja-chica/nueva"
+                className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 transition-colors"
+              >
+                Nueva rendición
+              </Link>
+            )}
+          </div>
         </div>
 
         {saldoBanner && (
