@@ -17,7 +17,16 @@ interface PerfilActual {
   areas: string[] | null
 }
 
+// Rutas de API que corren SIN sesion de usuario y se autoprotegen con su propio
+// secreto (el gate de auth las mandaria a /login con un 307). Coincidencia
+// EXACTA: se excluye solo esta ruta, nunca todo /api.
+const RUTAS_SIN_SESION = ['/api/caja-chica/recordatorio']
+
 export async function updateSession(request: NextRequest) {
+  if (RUTAS_SIN_SESION.includes(request.nextUrl.pathname)) {
+    return NextResponse.next({ request })
+  }
+
   let response = NextResponse.next({ request })
 
   const supabase = createServerClient(
