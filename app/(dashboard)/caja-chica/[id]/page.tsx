@@ -129,6 +129,11 @@ export default async function RendicionDetallePage({ params }: Props) {
     .eq('cliente_id', clienteId)
     .maybeSingle<{ instrucciones_caja_chica: string | null }>()
 
+  // Advertencia blanda al enviar: gastos sin adjunto de boleta.
+  const gastosSinBoleta = gastos.filter(
+    (g) => !(adjuntosPorGasto[g.id]?.length)
+  ).length
+
   return (
     <>
       <Header usuario={usuario} titulo="Detalle de rendición" />
@@ -277,6 +282,7 @@ export default async function RendicionDetallePage({ params }: Props) {
               estado={rendicion.estado}
               puedeEnviar={puedeEnviar}
               gestiona={gestiona}
+              gastosSinBoleta={gastosSinBoleta}
             />
           </div>
         </div>
