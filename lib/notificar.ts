@@ -710,3 +710,56 @@ export async function notificarRendicionResuelta(
     contexto: 'rendición resuelta',
   })
 }
+
+/**
+ * Recordatorio de fin de mes: "rinde tu caja chica". Se envia a la unidad
+ * (correo ya resuelto por el cron). Si el correo cayo al fallback de César
+ * (unidad sin correo configurado), lo indica en el cuerpo. Nunca lanza.
+ */
+export async function notificarRecordatorioCajaChica(
+  destinatario: string,
+  local: string,
+  opts?: { sinCorreoConfigurado?: boolean }
+): Promise<void> {
+  const destinatarios = [destinatario].filter(
+    (e): e is string => typeof e === 'string' && e.includes('@')
+  )
+
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  const link = `${baseUrl}/caja-chica`
+
+  const filas: [string, string][] = [['Local', local]]
+  if (opts?.sinCorreoConfigurado) {
+    filas.push([
+      '⚠ Aviso',
+      `La unidad ${local} no tiene correo configurado; este recordatorio llega a César.`,
+    ])
+  }
+
+  const intro =
+    'Recordatorio de fin de mes: rinde la caja chica del periodo para esta unidad.'
+  const texto = [
+    intro,
+    '',
+    ...filas.map(([k, v]) => `${k}: ${v}`),
+    '',
+    `Ir a caja chica: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: 'Recordatorio de caja chica',
+    headerColor: '#2563EB',
+    intro,
+    filas,
+    link,
+    linkTexto: 'Ir a caja chica',
+  })
+
+  await enviarCorreoCaso({
+    destinatarios,
+    subject: `Recordatorio: rinde tu caja chica — ${local}`,
+    texto,
+    html,
+    contexto: 'recordatorio caja chica',
+  })
+}
