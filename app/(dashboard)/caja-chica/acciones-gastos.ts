@@ -33,7 +33,7 @@ async function rendicionEditable(
   supabase: SupabaseClient,
   clienteId: string,
   rol: string,
-  local: string | null,
+  local: string | null | undefined,
   rendicionId: string
 ): Promise<{ ok: boolean; error?: string }> {
   const { data: rendicion } = await supabase
