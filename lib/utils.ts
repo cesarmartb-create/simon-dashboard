@@ -5,7 +5,12 @@ export function cn(...classes: Array<string | false | null | undefined>): string
 export function formatFecha(fecha: string | null | undefined): string {
   if (!fecha) return '—'
   const d = new Date(fecha)
+  // timeZone explicito: en Vercel los Server Components corren en UTC; sin esto
+  // los timestamptz se mostrarian en UTC (ej. 21:41 CL saldria como 01:41).
+  // Solo para valores CON hora (timestamptz). Las fechas puras (tipo date) usan
+  // formatFechaCorta, que NO lleva timeZone para no desplazarse un dia.
   return d.toLocaleString('es-CL', {
+    timeZone: 'America/Santiago',
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
