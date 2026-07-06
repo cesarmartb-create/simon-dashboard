@@ -37,10 +37,14 @@ const COLUMNAS: (keyof ExportRow)[] = [
 // BOM UTF-8 (U+FEFF): hace que Excel abra el CSV con la codificacion correcta.
 const BOM = String.fromCharCode(0xfeff)
 
-/** Escapa un campo CSV (comillas, comas, saltos de linea). */
+// Separador punto y coma: Excel es-CL/es-ES lo parsea nativo al abrir (la coma
+// choca con el separador decimal regional y mete todo en una sola columna).
+const SEP = ';'
+
+/** Escapa un campo CSV (comillas, ; o saltos de linea) con comillas dobles. */
 function escapeCsv(valor: unknown): string {
   const s = valor == null ? '' : String(valor)
-  if (/[",\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`
+  if (/[";\n\r]/.test(s)) return `"${s.replace(/"/g, '""')}"`
   return s
 }
 
@@ -55,9 +59,9 @@ interface Props {
  */
 export default function ExportarCsvBoton({ filas }: Props) {
   function descargar() {
-    const encabezado = COLUMNAS.join(',')
+    const encabezado = COLUMNAS.join(SEP)
     const cuerpo = filas
-      .map((f) => COLUMNAS.map((c) => escapeCsv(f[c])).join(','))
+      .map((f) => COLUMNAS.map((c) => escapeCsv(f[c])).join(SEP))
       .join('\r\n')
     const csv = `${BOM}${encabezado}\r\n${cuerpo}`
 
