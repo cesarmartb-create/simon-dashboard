@@ -156,8 +156,12 @@ export default function GastosTabla({
                     {boletas.length === 0 ? (
                       <span className="text-xs text-gray-400">—</span>
                     ) : (
-                      boletas.map((b) =>
-                        b.url ? (
+                      boletas.map((b, i) => {
+                        const etiqueta =
+                          boletas.length > 1
+                            ? `Boleta ${i + 1}/${boletas.length}`
+                            : 'Boleta'
+                        return b.url ? (
                           <a
                             key={b.id}
                             href={b.url}
@@ -165,14 +169,14 @@ export default function GastosTabla({
                             rel="noopener noreferrer"
                             className="text-accent text-xs font-medium hover:underline block"
                           >
-                            Ver boleta
+                            {etiqueta}
                           </a>
                         ) : (
                           <span key={b.id} className="text-xs text-gray-400 block">
-                            {b.nombre_archivo}
+                            {etiqueta}
                           </span>
                         )
-                      )
+                      })
                     )}
                   </td>
                   <td className="px-4 py-3">

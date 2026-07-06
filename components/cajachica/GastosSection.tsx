@@ -52,6 +52,7 @@ export default function GastosSection({
           clienteId={clienteId}
           tipos={tipos}
           gastoEditar={editando}
+          boletasExistentes={editando ? (adjuntosPorGasto[editando.id] ?? []) : []}
           onDone={() => setEditando(null)}
         />
       )}

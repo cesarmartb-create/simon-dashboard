@@ -6,7 +6,7 @@ import { createClient } from '@/lib/supabase/client'
 import { agregarGasto, editarGasto } from '@/app/(dashboard)/caja-chica/acciones-gastos'
 import AdjuntosInput from '@/components/adjuntos/AdjuntosInput'
 import { registrarAdjuntos } from '@/components/adjuntos/actions'
-import { subirAdjuntos } from '@/lib/adjuntos'
+import { subirAdjuntos, type AdjuntoConUrl } from '@/lib/adjuntos'
 import {
   FORMAS_PAGO,
   FORMA_PAGO_LABEL,
@@ -27,6 +27,7 @@ interface Props {
   clienteId: string
   tipos: TipoOpcion[]
   gastoEditar?: GastoConTipo | null
+  boletasExistentes?: AdjuntoConUrl[]
   onDone?: () => void
 }
 
@@ -35,6 +36,7 @@ export default function GastoForm({
   clienteId,
   tipos,
   gastoEditar,
+  boletasExistentes = [],
   onDone,
 }: Props) {
   const router = useRouter()
@@ -305,6 +307,37 @@ export default function GastoForm({
           className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
         />
       </div>
+
+      {editando && boletasExistentes.length > 0 && (
+        <div>
+          <div className="text-xs font-medium text-gray-700 mb-1">
+            Boletas actuales ({boletasExistentes.length})
+          </div>
+          <ul className="space-y-1">
+            {boletasExistentes.map((b, i) => {
+              const etiqueta = `Boleta ${i + 1}/${boletasExistentes.length}`
+              return (
+                <li key={b.id} className="text-sm text-gray-700">
+                  {b.url ? (
+                    <a
+                      href={b.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-accent hover:underline"
+                    >
+                      {etiqueta} — {b.nombre_archivo}
+                    </a>
+                  ) : (
+                    <span>
+                      {etiqueta} — {b.nombre_archivo}
+                    </span>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+        </div>
+      )}
 
       <div>
         <label className="text-xs font-medium text-gray-700 mb-1 block">
