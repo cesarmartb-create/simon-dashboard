@@ -1,7 +1,7 @@
 import CatalogoTabla from '@/components/configuracion/CatalogoTabla'
 import { requireAdmin } from '@/lib/sesion'
 
-export default async function TiposGastoPage() {
+export default async function EmpresasPage() {
   const usuario = await requireAdmin()
   if (!usuario.cliente_id) {
     return (
@@ -13,11 +13,11 @@ export default async function TiposGastoPage() {
   return (
     <CatalogoTabla
       clienteId={usuario.cliente_id}
-      tabla="tipos_gasto"
-      titulo="Tipos de gasto"
-      etiquetaSingular="tipo de gasto"
-      codigoPlaceholder="ej. movilizacion"
-      nombrePlaceholder="ej. Movilizacion y transporte"
+      tabla="empresas"
+      titulo="Empresas"
+      etiquetaSingular="empresa"
+      codigoPlaceholder="ej. cokoa"
+      nombrePlaceholder="ej. Sociedad Cokoa SpA"
     />
   )
 }

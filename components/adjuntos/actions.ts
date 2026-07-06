@@ -9,6 +9,7 @@ import { notificarNuevoCaso, notificarNuevoAjuste } from '@/lib/notificar'
 import {
   ADJUNTOS_BUCKET,
   ADJUNTOS_MAX,
+  ADJUNTOS_MAX_COMPROBANTE,
   ADJUNTOS_MAX_BYTES,
   ADJUNTOS_TIPOS_MIME,
   type ArchivoSubido,
@@ -41,10 +42,13 @@ export async function registrarAdjuntos(
 
   const archivos = input.archivos ?? []
   if (archivos.length === 0) return { ok: true, registrados: 0 }
-  if (archivos.length > ADJUNTOS_MAX) {
+  // Comprobantes de rendicion admiten mas (una transferencia por empresa).
+  const maxArchivos =
+    input.entidad === 'rendiciones' ? ADJUNTOS_MAX_COMPROBANTE : ADJUNTOS_MAX
+  if (archivos.length > maxArchivos) {
     return {
       ok: false,
-      error: `Solo puedes adjuntar hasta ${ADJUNTOS_MAX} archivos.`,
+      error: `Solo puedes adjuntar hasta ${maxArchivos} archivos.`,
     }
   }
 

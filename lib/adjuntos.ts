@@ -3,6 +3,9 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 // Configuracion del bucket privado de adjuntos.
 export const ADJUNTOS_BUCKET = 'adjuntos'
 export const ADJUNTOS_MAX = 3
+// Los comprobantes de transferencia de una rendicion pueden ser varios
+// (una transferencia por empresa): limite mas alto solo para esa entidad.
+export const ADJUNTOS_MAX_COMPROBANTE = 5
 export const ADJUNTOS_MAX_BYTES = 10 * 1024 * 1024 // 10 MB
 export const ADJUNTOS_TIPOS_MIME = [
   'application/pdf',

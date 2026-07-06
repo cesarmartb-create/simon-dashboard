@@ -25,6 +25,7 @@ interface Props {
   // modificarlo (la subida queda para admin/gestor).
   soloLectura?: boolean
   titulo?: string
+  maxArchivos?: number
 }
 
 /**
@@ -40,6 +41,7 @@ export default function AdjuntosPanel({
   esAdmin,
   soloLectura = false,
   titulo = 'Adjuntos',
+  maxArchivos,
 }: Props) {
   const router = useRouter()
   const supabase = createClient()
@@ -183,7 +185,12 @@ export default function AdjuntosPanel({
 
       {!soloLectura && (
         <div className="border-t border-gray-100 pt-4 space-y-3">
-          <AdjuntosInput archivos={nuevos} onChange={setNuevos} disabled={subiendo} />
+          <AdjuntosInput
+            archivos={nuevos}
+            onChange={setNuevos}
+            disabled={subiendo}
+            max={maxArchivos}
+          />
           {nuevos.length > 0 && (
             <button
               onClick={handleSubir}

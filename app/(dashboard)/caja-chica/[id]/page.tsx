@@ -13,7 +13,12 @@ import { createClient } from '@/lib/supabase/server'
 import { puedeVerCajaChica, puedeGestionarCajaChica } from '@/lib/cajachica'
 import { nombreDesdeEmail } from '@/lib/auth'
 import { formatFecha, formatCLP } from '@/lib/utils'
-import { ADJUNTOS_BUCKET, type Adjunto, type AdjuntoConUrl } from '@/lib/adjuntos'
+import {
+  ADJUNTOS_BUCKET,
+  ADJUNTOS_MAX_COMPROBANTE,
+  type Adjunto,
+  type AdjuntoConUrl,
+} from '@/lib/adjuntos'
 import type { RendicionCajaChica } from '@/types/cajachica'
 
 interface Props {
@@ -301,6 +306,7 @@ export default async function RendicionDetallePage({ params }: Props) {
                 esAdmin={usuario.rol === 'admin'}
                 soloLectura={!gestiona}
                 titulo="Comprobante de transferencia"
+                maxArchivos={ADJUNTOS_MAX_COMPROBANTE}
               />
             )}
           </div>

@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '@/lib/supabase/client'
 import ConfirmDialog from './ConfirmDialog'
 
-interface TipoGastoFila {
+interface Fila {
   id: string
   codigo: string
   nombre: string
@@ -13,25 +13,39 @@ interface TipoGastoFila {
 
 interface Props {
   clienteId: string
+  tabla: 'tipos_gasto' | 'empresas'
+  titulo: string
+  etiquetaSingular: string
+  codigoPlaceholder?: string
+  nombrePlaceholder?: string
 }
 
 /**
- * Mensaje de codigo duplicado que distingue si el choque es contra un tipo
- * ACTIVO o uno DESACTIVADO (soft-delete): el unique (cliente_id, codigo)
- * incluye las filas inactivas.
+ * CRUD de un catalogo (codigo, nombre, activo, orden) con soft-delete y
+ * reactivacion. Logica identica a la probada en tipos_gasto, parametrizada
+ * por tabla/etiquetas para reutilizarla en 'tipos_gasto' y 'empresas'.
+ * El unique (cliente_id, codigo) incluye filas desactivadas: los mensajes
+ * distinguen choque contra activo vs desactivado.
  */
-function mensajeDuplicado(codigo: string, desactivados: TipoGastoFila[]): string {
+function mensajeDuplicado(codigo: string, desactivados: Fila[]): string {
   const enDesactivados = desactivados.some((d) => d.codigo === codigo)
   return enDesactivados
-    ? "Ese codigo pertenece a un tipo desactivado. Reactivalo desde 'Ver desactivados'."
+    ? "Ese codigo pertenece a un registro desactivado. Reactivalo desde 'Ver desactivados'."
     : 'Ese codigo ya existe para este cliente.'
 }
 
-export default function TiposGastoTabla({ clienteId }: Props) {
+export default function CatalogoTabla({
+  clienteId,
+  tabla,
+  titulo,
+  etiquetaSingular,
+  codigoPlaceholder,
+  nombrePlaceholder,
+}: Props) {
   const supabase = createClient()
 
-  const [filas, setFilas] = useState<TipoGastoFila[]>([])
-  const [desactivados, setDesactivados] = useState<TipoGastoFila[]>([])
+  const [filas, setFilas] = useState<Fila[]>([])
+  const [desactivados, setDesactivados] = useState<Fila[]>([])
   const [cargando, setCargando] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
@@ -40,7 +54,7 @@ export default function TiposGastoTabla({ clienteId }: Props) {
   const [nombre, setNombre] = useState('')
   const [guardando, setGuardando] = useState(false)
 
-  const [eliminando, setEliminando] = useState<TipoGastoFila | null>(null)
+  const [eliminando, setEliminando] = useState<Fila | null>(null)
   const [confirmando, setConfirmando] = useState(false)
 
   const [verDesactivados, setVerDesactivados] = useState(false)
@@ -54,17 +68,17 @@ export default function TiposGastoTabla({ clienteId }: Props) {
       setCargando(true)
       setError(null)
       const { data, error: err } = await supabase
-        .from('tipos_gasto')
+        .from(tabla)
         .select('id, codigo, nombre, orden, activo')
         .eq('cliente_id', clienteId)
         .order('orden', { ascending: true })
 
       if (!activo) return
       if (err) {
-        setError(`No se pudieron cargar los tipos de gasto: ${err.message}`)
+        setError(`No se pudo cargar ${titulo.toLowerCase()}: ${err.message}`)
       } else {
-        const todos = (data ?? []) as (TipoGastoFila & { activo: boolean })[]
-        const soloDatos = ({ activo: _a, ...r }: TipoGastoFila & { activo: boolean }) => r
+        const todos = (data ?? []) as (Fila & { activo: boolean })[]
+        const soloDatos = ({ activo: _a, ...r }: Fila & { activo: boolean }) => r
         setFilas(todos.filter((t) => t.activo).map(soloDatos))
         setDesactivados(todos.filter((t) => !t.activo).map(soloDatos))
       }
@@ -74,7 +88,7 @@ export default function TiposGastoTabla({ clienteId }: Props) {
     return () => {
       activo = false
     }
-  }, [supabase, clienteId])
+  }, [supabase, clienteId, tabla, titulo])
 
   function limpiarForm() {
     setEditandoId(null)
@@ -82,8 +96,7 @@ export default function TiposGastoTabla({ clienteId }: Props) {
     setNombre('')
   }
 
-  function abrirEdicion(f: TipoGastoFila) {
-    // Carga SIEMPRE la fila clickeada y resetea estado previo.
+  function abrirEdicion(f: Fila) {
     setError(null)
     setGuardando(false)
     setEditandoId(f.id)
@@ -98,10 +111,9 @@ export default function TiposGastoTabla({ clienteId }: Props) {
     setGuardando(true)
     setError(null)
 
-    // EDITAR: update por id. Si choca (23505), distinguir activo/desactivado.
     if (editando) {
       const { data, error: err } = await supabase
-        .from('tipos_gasto')
+        .from(tabla)
         .update({ codigo: cod, nombre: nom })
         .eq('id', editandoId!)
         .eq('cliente_id', clienteId)
@@ -113,23 +125,20 @@ export default function TiposGastoTabla({ clienteId }: Props) {
         setError(
           err.code === '23505'
             ? mensajeDuplicado(cod, desactivados)
-            : `No se pudo actualizar el tipo: ${err.message}`
+            : `No se pudo actualizar: ${err.message}`
         )
         return
       }
-      setFilas((prev) =>
-        prev.map((f) => (f.id === editandoId ? (data as TipoGastoFila) : f))
-      )
+      setFilas((prev) => prev.map((f) => (f.id === editandoId ? (data as Fila) : f)))
       limpiarForm()
       return
     }
 
-    // AGREGAR: si existe una fila DESACTIVADA con este codigo, REACTIVARLA
-    // (activo=true + nombre nuevo) en vez de insertar.
+    // Si existe una fila DESACTIVADA con este codigo, REACTIVARLA.
     const inactivo = desactivados.find((d) => d.codigo === cod)
     if (inactivo) {
       const { data, error: err } = await supabase
-        .from('tipos_gasto')
+        .from(tabla)
         .update({ activo: true, nombre: nom })
         .eq('id', inactivo.id)
         .eq('cliente_id', clienteId)
@@ -138,18 +147,18 @@ export default function TiposGastoTabla({ clienteId }: Props) {
 
       setGuardando(false)
       if (err) {
-        setError(`No se pudo reactivar el tipo: ${err.message}`)
+        setError(`No se pudo reactivar: ${err.message}`)
         return
       }
       setDesactivados((prev) => prev.filter((d) => d.id !== inactivo.id))
-      setFilas((prev) => [...prev, data as TipoGastoFila])
+      setFilas((prev) => [...prev, data as Fila])
       limpiarForm()
       return
     }
 
     const maxOrden = filas.reduce((m, f) => Math.max(m, f.orden ?? 0), 0)
     const { data, error: err } = await supabase
-      .from('tipos_gasto')
+      .from(tabla)
       .insert({
         cliente_id: clienteId,
         codigo: cod,
@@ -165,19 +174,19 @@ export default function TiposGastoTabla({ clienteId }: Props) {
       setError(
         err.code === '23505'
           ? mensajeDuplicado(cod, desactivados)
-          : `No se pudo agregar el tipo: ${err.message}`
+          : `No se pudo agregar: ${err.message}`
       )
       return
     }
-    setFilas((prev) => [...prev, data as TipoGastoFila])
+    setFilas((prev) => [...prev, data as Fila])
     limpiarForm()
   }
 
-  async function reactivar(f: TipoGastoFila) {
+  async function reactivar(f: Fila) {
     setReactivandoId(f.id)
     setError(null)
     const { data, error: err } = await supabase
-      .from('tipos_gasto')
+      .from(tabla)
       .update({ activo: true })
       .eq('id', f.id)
       .eq('cliente_id', clienteId)
@@ -186,11 +195,11 @@ export default function TiposGastoTabla({ clienteId }: Props) {
 
     setReactivandoId(null)
     if (err) {
-      setError(`No se pudo reactivar el tipo: ${err.message}`)
+      setError(`No se pudo reactivar: ${err.message}`)
       return
     }
     setDesactivados((prev) => prev.filter((d) => d.id !== f.id))
-    setFilas((prev) => [...prev, data as TipoGastoFila])
+    setFilas((prev) => [...prev, data as Fila])
   }
 
   async function confirmarEliminar() {
@@ -199,14 +208,14 @@ export default function TiposGastoTabla({ clienteId }: Props) {
     setError(null)
 
     const { error: err } = await supabase
-      .from('tipos_gasto')
+      .from(tabla)
       .update({ activo: false })
       .eq('id', eliminando.id)
       .eq('cliente_id', clienteId)
 
     setConfirmando(false)
     if (err) {
-      setError(`No se pudo eliminar el tipo: ${err.message}`)
+      setError(`No se pudo eliminar: ${err.message}`)
       setEliminando(null)
       return
     }
@@ -219,11 +228,11 @@ export default function TiposGastoTabla({ clienteId }: Props) {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-semibold text-gray-900">Tipos de gasto</h2>
+        <h2 className="text-lg font-semibold text-gray-900">{titulo}</h2>
         <p className="text-sm text-gray-500">
           {cargando
             ? 'Cargando…'
-            : `${filas.length} tipo${filas.length === 1 ? '' : 's'} activo${filas.length === 1 ? '' : 's'}`}
+            : `${filas.length} activo${filas.length === 1 ? '' : 's'}`}
         </p>
       </div>
 
@@ -235,7 +244,7 @@ export default function TiposGastoTabla({ clienteId }: Props) {
 
       <div className="bg-white border border-gray-200 p-5 space-y-4">
         <div className="text-sm font-semibold text-gray-900">
-          {editando ? 'Editar tipo de gasto' : 'Nuevo tipo de gasto'}
+          {editando ? `Editar ${etiquetaSingular}` : `Agregar ${etiquetaSingular}`}
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -247,7 +256,7 @@ export default function TiposGastoTabla({ clienteId }: Props) {
               type="text"
               value={codigo}
               onChange={(e) => setCodigo(e.target.value)}
-              placeholder="ej. movilizacion"
+              placeholder={codigoPlaceholder}
               className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
             />
           </div>
@@ -259,7 +268,7 @@ export default function TiposGastoTabla({ clienteId }: Props) {
               type="text"
               value={nombre}
               onChange={(e) => setNombre(e.target.value)}
-              placeholder="ej. Movilizacion y transporte"
+              placeholder={nombrePlaceholder}
               className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
             />
           </div>
@@ -280,7 +289,11 @@ export default function TiposGastoTabla({ clienteId }: Props) {
             disabled={guardando || cargando}
             className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-4 py-2 transition-colors"
           >
-            {guardando ? 'Guardando…' : editando ? 'Actualizar' : 'Agregar tipo'}
+            {guardando
+              ? 'Guardando…'
+              : editando
+                ? 'Actualizar'
+                : `Agregar ${etiquetaSingular}`}
           </button>
         </div>
       </div>
@@ -299,13 +312,13 @@ export default function TiposGastoTabla({ clienteId }: Props) {
             {cargando ? (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
-                  Cargando tipos…
+                  Cargando…
                 </td>
               </tr>
             ) : filas.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
-                  No hay tipos de gasto activos.
+                  No hay registros activos.
                 </td>
               </tr>
             ) : (
@@ -384,7 +397,7 @@ export default function TiposGastoTabla({ clienteId }: Props) {
 
       {eliminando && (
         <ConfirmDialog
-          mensaje={`¿Eliminar el tipo de gasto "${eliminando.nombre}"? Quedará desactivado (puedes reactivarlo luego).`}
+          mensaje={`¿Eliminar "${eliminando.nombre}"? Quedará desactivado (puedes reactivarlo luego).`}
           confirmando={confirmando}
           onCancel={() => setEliminando(null)}
           onConfirm={confirmarEliminar}

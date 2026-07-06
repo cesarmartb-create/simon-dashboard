@@ -12,6 +12,7 @@ interface Props {
   archivos: File[]
   onChange: (archivos: File[]) => void
   disabled?: boolean
+  max?: number
 }
 
 /**
@@ -19,7 +20,12 @@ interface Props {
  * El estado de archivos lo controla el padre; este componente solo valida
  * y notifica. La subida a Storage la orquesta quien lo usa.
  */
-export default function AdjuntosInput({ archivos, onChange, disabled }: Props) {
+export default function AdjuntosInput({
+  archivos,
+  onChange,
+  disabled,
+  max = ADJUNTOS_MAX,
+}: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [errores, setErrores] = useState<string[]>([])
 
@@ -42,10 +48,8 @@ export default function AdjuntosInput({ archivos, onChange, disabled }: Props) {
         (f) => f.name === file.name && f.size === file.size
       )
       if (duplicado) continue
-      if (aceptados.length >= ADJUNTOS_MAX) {
-        errs.push(
-          `Maximo ${ADJUNTOS_MAX} archivos. "${file.name}" no se agrego.`
-        )
+      if (aceptados.length >= max) {
+        errs.push(`Maximo ${max} archivos. "${file.name}" no se agrego.`)
         continue
       }
       aceptados.push(file)
@@ -60,7 +64,7 @@ export default function AdjuntosInput({ archivos, onChange, disabled }: Props) {
     setErrores([])
   }
 
-  const topeAlcanzado = archivos.length >= ADJUNTOS_MAX
+  const topeAlcanzado = archivos.length >= max
 
   return (
     <div className="flex flex-col gap-2">
@@ -68,7 +72,7 @@ export default function AdjuntosInput({ archivos, onChange, disabled }: Props) {
         Adjuntos (opcional)
       </label>
       <p className="text-xs text-gray-500">
-        PDF, JPG o PNG. Maximo {ADJUNTOS_MAX} archivos, 10 MB cada uno.
+        PDF, JPG o PNG. Maximo {max} archivos, 10 MB cada uno.
       </p>
       <input
         ref={inputRef}

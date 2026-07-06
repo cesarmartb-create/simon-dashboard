@@ -27,6 +27,7 @@ const TABS: { href: string; label: string; roles: Rol[] }[] = [
     label: 'Tipos de gasto',
     roles: ['admin'],
   },
+  { href: '/configuracion/empresas', label: 'Empresas', roles: ['admin'] },
   { href: '/configuracion/caja-chica', label: 'Caja chica', roles: ['admin'] },
   { href: '/configuracion/agente', label: 'Agente', roles: ['admin'] },
 ]
