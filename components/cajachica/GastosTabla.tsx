@@ -105,16 +105,16 @@ export default function GastosTabla({
         <table className="w-full text-sm">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr className="text-left text-xs uppercase tracking-wide text-gray-600">
-              <th className="px-4 py-3 font-medium">Fecha</th>
-              <th className="px-4 py-3 font-medium">Tipo</th>
-              <th className="px-4 py-3 font-medium">Proveedor</th>
-              <th className="px-4 py-3 font-medium text-right">Monto</th>
-              <th className="px-4 py-3 font-medium">Forma</th>
-              <th className="px-4 py-3 font-medium">Doc.</th>
-              <th className="px-4 py-3 font-medium">Boleta</th>
-              <th className="px-4 py-3 font-medium">Estado</th>
+              <th className="px-3 py-2 font-medium w-20">Fecha</th>
+              <th className="px-3 py-2 font-medium">Tipo</th>
+              <th className="px-3 py-2 font-medium">Proveedor</th>
+              <th className="px-3 py-2 font-medium text-right w-24">Monto</th>
+              <th className="px-3 py-2 font-medium w-20">Forma</th>
+              <th className="px-3 py-2 font-medium w-28">Doc.</th>
+              <th className="px-3 py-2 font-medium w-20">Boleta</th>
+              <th className="px-3 py-2 font-medium w-24">Estado</th>
               {(modoRevision || modoEdicion) && (
-                <th className="px-4 py-3 font-medium text-right">Acciones</th>
+                <th className="px-3 py-2 font-medium text-right w-24">Acciones</th>
               )}
             </tr>
           </thead>
@@ -125,34 +125,34 @@ export default function GastosTabla({
                 ESTADO_GASTO_ESTILO[g.estado] ?? ESTADO_GASTO_ESTILO.pendiente
               return (
                 <tr key={g.id} className="align-top">
-                  <td className="px-4 py-3 text-gray-500 whitespace-nowrap">
+                  <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
                     {formatFechaCorta(g.fecha_gasto)}
                   </td>
-                  <td className="px-4 py-3 text-gray-700">
+                  <td className="px-3 py-2 text-gray-700">
                     {g.tipos_gasto?.nombre ?? '—'}
                   </td>
-                  <td className="px-4 py-3 text-gray-700">
+                  <td className="px-3 py-2 text-gray-700 break-words">
                     {g.proveedor ?? '—'}
                     {g.descripcion && (
-                      <span className="block text-xs text-gray-400">
+                      <span className="block text-xs text-gray-400 break-words">
                         {g.descripcion}
                       </span>
                     )}
                   </td>
-                  <td className="px-4 py-3 text-right text-gray-700 whitespace-nowrap">
+                  <td className="px-3 py-2 text-right text-gray-700 whitespace-nowrap">
                     {formatCLP(g.monto)}
                   </td>
-                  <td className="px-4 py-3 text-gray-700">
+                  <td className="px-3 py-2 text-gray-700">
                     {FORMA_PAGO_LABEL[g.forma_pago] ?? g.forma_pago}
                   </td>
-                  <td className="px-4 py-3 text-gray-500">
+                  <td className="px-3 py-2 text-gray-500">
                     {g.tipo_documento === 'sin_documento'
                       ? '—'
                       : `${TIPO_DOCUMENTO_LABEL[g.tipo_documento]}${
                           g.n_documento ? ` ${g.n_documento}` : ''
                         }`}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2">
                     {boletas.length === 0 ? (
                       <span className="text-xs text-gray-400">—</span>
                     ) : (
@@ -179,7 +179,7 @@ export default function GastosTabla({
                       })
                     )}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-3 py-2">
                     <span
                       className={cn(
                         'inline-flex items-center px-2 py-0.5 text-xs font-medium border',
@@ -196,7 +196,7 @@ export default function GastosTabla({
                   </td>
 
                   {(modoRevision || modoEdicion) && (
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                    <td className="px-3 py-2 text-right whitespace-nowrap">
                       {modoEdicion && (
                         <div className="flex justify-end gap-3">
                           <button
@@ -219,7 +219,7 @@ export default function GastosTabla({
                       {modoRevision && g.estado === 'pendiente' && (
                         <div className="flex flex-col items-end gap-1">
                           {rechazandoId === g.id ? (
-                            <div className="w-56 space-y-2">
+                            <div className="w-44 space-y-2">
                               <textarea
                                 value={observacion}
                                 onChange={(e) => setObservacion(e.target.value)}
