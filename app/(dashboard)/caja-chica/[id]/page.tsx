@@ -150,20 +150,22 @@ export default async function RendicionDetallePage({ params }: Props) {
     (g) => !(adjuntosPorGasto[g.id]?.length)
   ).length
 
-  // Totales por empresa (guia de transferencias): suma de gastos APROBADOS,
-  // agrupados por empresa; se muestra al cerrar/pagar.
-  let totalesEmpresa: { empresa: string; total: number }[] = []
-  if (mostrarComprobante) {
+  // Totales por empresa (guia de transferencias). Siempre visible:
+  //  - borrador / en_revision: PRELIMINAR, suma TODOS los gastos.
+  //  - aprobada / aprobada_parcial / pagado: suma solo los APROBADOS.
+  const totalesPreliminar =
+    rendicion.estado === 'abierto' || rendicion.estado === 'en_revision'
+  const totalesEmpresa: { empresa: string; total: number }[] = (() => {
     const acc = new Map<string, number>()
     for (const g of gastos) {
-      if (g.estado !== 'aprobado') continue
+      if (!totalesPreliminar && g.estado !== 'aprobado') continue
       const nombre = g.empresas?.nombre ?? 'Sin asignar'
       acc.set(nombre, (acc.get(nombre) ?? 0) + Number(g.monto ?? 0))
     }
-    totalesEmpresa = Array.from(acc, ([empresa, total]) => ({ empresa, total })).sort(
+    return Array.from(acc, ([empresa, total]) => ({ empresa, total })).sort(
       (a, b) => b.total - a.total
     )
-  }
+  })()
 
   return (
     <>
@@ -295,7 +297,7 @@ export default async function RendicionDetallePage({ params }: Props) {
                 </section>
               )}
 
-            {mostrarComprobante && <TotalesPorEmpresa filas={totalesEmpresa} />}
+            <TotalesPorEmpresa filas={totalesEmpresa} preliminar={totalesPreliminar} />
 
             {mostrarComprobante && (
               <AdjuntosPanel
