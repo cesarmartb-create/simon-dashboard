@@ -6,6 +6,7 @@ export interface ExportRow {
   local: string
   fecha_gasto: string
   tipo_gasto: string
+  empresa: string
   proveedor: string
   descripcion: string
   tipo_documento: string
@@ -23,6 +24,7 @@ const COLUMNAS: (keyof ExportRow)[] = [
   'local',
   'fecha_gasto',
   'tipo_gasto',
+  'empresa',
   'proveedor',
   'descripcion',
   'tipo_documento',

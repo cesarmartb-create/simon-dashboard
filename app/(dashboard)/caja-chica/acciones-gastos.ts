@@ -16,6 +16,7 @@ interface AgregarGastoInput {
   proveedor: string | null
   descripcion: string | null
   tipoGastoId: string | null
+  empresaId: string | null
   formaPago: FormaPago
   nDocumento: string | null
   tipoDocumento: TipoDocumento
@@ -37,6 +38,24 @@ function docEfectivo(
 ): string | null {
   if (tipoDocumento === 'sin_documento') return null
   return nDocumento?.trim() || null
+}
+
+/** Valida la empresa (si viene): debe ser del mismo cliente y estar activa. */
+async function validarEmpresa(
+  supabase: SupabaseClient,
+  clienteId: string,
+  empresaId: string | null
+): Promise<{ ok: boolean; id: string | null; error?: string }> {
+  if (!empresaId) return { ok: true, id: null }
+  const { data } = await supabase
+    .from('empresas')
+    .select('id')
+    .eq('id', empresaId)
+    .eq('cliente_id', clienteId)
+    .eq('activo', true)
+    .maybeSingle<{ id: string }>()
+  if (!data) return { ok: false, id: null, error: 'Empresa inválida.' }
+  return { ok: true, id: data.id }
 }
 
 /**
@@ -137,6 +156,9 @@ export async function agregarGasto(
     tipoGastoId = tipo.id
   }
 
+  const emp = await validarEmpresa(supabase, usuario.cliente_id, input.empresaId)
+  if (!emp.ok) return { ok: false, error: emp.error }
+
   const { data: gasto, error } = await supabase
     .from('gastos_caja_chica')
     .insert({
@@ -147,6 +169,7 @@ export async function agregarGasto(
       proveedor: input.proveedor?.trim() || null,
       descripcion: input.descripcion?.trim() || null,
       tipo_gasto_id: tipoGastoId,
+      empresa_id: emp.id,
       forma_pago: input.formaPago,
       tipo_documento: input.tipoDocumento,
       n_documento: docEfectivo(input.tipoDocumento, input.nDocumento),
@@ -174,6 +197,7 @@ interface EditarGastoInput {
   proveedor: string | null
   descripcion: string | null
   tipoGastoId: string | null
+  empresaId: string | null
   formaPago: FormaPago
   nDocumento: string | null
   tipoDocumento: TipoDocumento
@@ -236,6 +260,9 @@ export async function editarGasto(
     tipoGastoIdEdit = tipo.id
   }
 
+  const empEdit = await validarEmpresa(supabase, usuario.cliente_id, input.empresaId)
+  if (!empEdit.ok) return { ok: false, error: empEdit.error }
+
   const { error: errorEdit } = await supabase
     .from('gastos_caja_chica')
     .update({
@@ -244,6 +271,7 @@ export async function editarGasto(
       proveedor: input.proveedor?.trim() || null,
       descripcion: input.descripcion?.trim() || null,
       tipo_gasto_id: tipoGastoIdEdit,
+      empresa_id: empEdit.id,
       forma_pago: input.formaPago,
       tipo_documento: input.tipoDocumento,
       n_documento: docEfectivo(input.tipoDocumento, input.nDocumento),

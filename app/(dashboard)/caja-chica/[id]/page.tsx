@@ -6,6 +6,7 @@ import GastosSection from '@/components/cajachica/GastosSection'
 import type { GastoConTipo } from '@/components/cajachica/GastosTabla'
 import AccionesRendicion from '@/components/cajachica/AccionesRendicion'
 import InstruccionesPanel from '@/components/cajachica/InstruccionesPanel'
+import TotalesPorEmpresa from '@/components/cajachica/TotalesPorEmpresa'
 import AdjuntosPanel from '@/components/adjuntos/AdjuntosPanel'
 import { getUsuarioActual } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
@@ -79,7 +80,7 @@ export default async function RendicionDetallePage({ params }: Props) {
 
   const { data: gastosData } = await supabase
     .from('gastos_caja_chica')
-    .select('*, tipos_gasto(nombre)')
+    .select('*, tipos_gasto(nombre), empresas(nombre)')
     .eq('rendicion_id', rendicion.id)
     .eq('cliente_id', clienteId)
     .order('fecha_gasto', { ascending: true })
@@ -124,6 +125,15 @@ export default async function RendicionDetallePage({ params }: Props) {
     .order('orden', { ascending: true })
   const tipos = (tiposData ?? []) as { id: string; nombre: string }[]
 
+  // Empresas para el select de gasto.
+  const { data: empresasData } = await supabase
+    .from('empresas')
+    .select('id, nombre')
+    .eq('cliente_id', clienteId)
+    .eq('activo', true)
+    .order('orden', { ascending: true })
+  const empresas = (empresasData ?? []) as { id: string; nombre: string }[]
+
   const { data: config } = await supabase
     .from('configuracion_cliente')
     .select('instrucciones_caja_chica')
@@ -134,6 +144,21 @@ export default async function RendicionDetallePage({ params }: Props) {
   const gastosSinBoleta = gastos.filter(
     (g) => !(adjuntosPorGasto[g.id]?.length)
   ).length
+
+  // Totales por empresa (guia de transferencias): suma de gastos APROBADOS,
+  // agrupados por empresa; se muestra al cerrar/pagar.
+  let totalesEmpresa: { empresa: string; total: number }[] = []
+  if (mostrarComprobante) {
+    const acc = new Map<string, number>()
+    for (const g of gastos) {
+      if (g.estado !== 'aprobado') continue
+      const nombre = g.empresas?.nombre ?? 'Sin asignar'
+      acc.set(nombre, (acc.get(nombre) ?? 0) + Number(g.monto ?? 0))
+    }
+    totalesEmpresa = Array.from(acc, ([empresa, total]) => ({ empresa, total })).sort(
+      (a, b) => b.total - a.total
+    )
+  }
 
   return (
     <>
@@ -215,6 +240,7 @@ export default async function RendicionDetallePage({ params }: Props) {
               gastos={gastos}
               adjuntosPorGasto={adjuntosPorGasto}
               tipos={tipos}
+              empresas={empresas}
               modoRevision={modoRevision}
               modoEdicion={modoEdicion}
             />
@@ -263,6 +289,8 @@ export default async function RendicionDetallePage({ params }: Props) {
                   </dl>
                 </section>
               )}
+
+            {mostrarComprobante && <TotalesPorEmpresa filas={totalesEmpresa} />}
 
             {mostrarComprobante && (
               <AdjuntosPanel

@@ -74,6 +74,16 @@ export interface TipoGasto {
   created_at?: string
 }
 
+export interface Empresa {
+  id: string
+  cliente_id: string
+  codigo: string
+  nombre: string
+  activo: boolean
+  orden: number | null
+  created_at?: string
+}
+
 export interface FondoCajaChica {
   id: string
   cliente_id: string
@@ -115,6 +125,7 @@ export interface GastoCajaChica {
   proveedor: string | null
   descripcion: string | null
   tipo_gasto_id: string | null
+  empresa_id: string | null
   forma_pago: FormaPago
   n_documento: string | null
   tipo_documento: TipoDocumento

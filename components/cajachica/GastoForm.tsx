@@ -26,6 +26,7 @@ interface Props {
   rendicionId: string
   clienteId: string
   tipos: TipoOpcion[]
+  empresas: TipoOpcion[]
   gastoEditar?: GastoConTipo | null
   boletasExistentes?: AdjuntoConUrl[]
   onDone?: () => void
@@ -35,6 +36,7 @@ export default function GastoForm({
   rendicionId,
   clienteId,
   tipos,
+  empresas,
   gastoEditar,
   boletasExistentes = [],
   onDone,
@@ -48,6 +50,7 @@ export default function GastoForm({
   const [proveedor, setProveedor] = useState('')
   const [descripcion, setDescripcion] = useState('')
   const [tipoGastoId, setTipoGastoId] = useState('')
+  const [empresaId, setEmpresaId] = useState('')
   const [formaPago, setFormaPago] = useState<FormaPago>('efectivo')
   const [tipoDocumento, setTipoDocumento] = useState<TipoDocumento>('boleta')
   const [nDocumento, setNDocumento] = useState('')
@@ -64,6 +67,7 @@ export default function GastoForm({
       setProveedor(gastoEditar.proveedor ?? '')
       setDescripcion(gastoEditar.descripcion ?? '')
       setTipoGastoId(gastoEditar.tipo_gasto_id ?? '')
+      setEmpresaId(gastoEditar.empresa_id ?? '')
       setFormaPago(gastoEditar.forma_pago)
       setTipoDocumento(gastoEditar.tipo_documento ?? 'sin_documento')
       setNDocumento(gastoEditar.n_documento ?? '')
@@ -82,6 +86,7 @@ export default function GastoForm({
     setProveedor('')
     setDescripcion('')
     setTipoGastoId('')
+    setEmpresaId('')
     setFormaPago('efectivo')
     setTipoDocumento('boleta')
     setNDocumento('')
@@ -113,6 +118,7 @@ export default function GastoForm({
       proveedor: proveedor.trim() || null,
       descripcion: descripcion.trim() || null,
       tipoGastoId: tipoGastoId || null,
+      empresaId: empresaId || null,
       formaPago,
       tipoDocumento,
       nDocumento: nDocumento.trim() || null,
@@ -238,6 +244,24 @@ export default function GastoForm({
             ))}
           </select>
         </div>
+      </div>
+
+      <div className="flex flex-col">
+        <label className="text-xs font-medium text-gray-700 mb-1">
+          Empresa (opcional)
+        </label>
+        <select
+          value={empresaId}
+          onChange={(e) => setEmpresaId(e.target.value)}
+          className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
+        >
+          <option value="">Sin empresa</option>
+          {empresas.map((em) => (
+            <option key={em.id} value={em.id}>
+              {em.nombre}
+            </option>
+          ))}
+        </select>
       </div>
 
       <div className="grid grid-cols-2 gap-4">

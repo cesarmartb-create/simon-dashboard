@@ -87,7 +87,7 @@ export default async function CajaChicaPage({ searchParams }: Props) {
     const { data: gastosData } = await supabase
       .from('gastos_caja_chica')
       .select(
-        'rendicion_id, fecha_gasto, monto, proveedor, descripcion, tipo_documento, n_documento, forma_pago, estado, centro_costo, tipos_gasto(nombre)'
+        'rendicion_id, fecha_gasto, monto, proveedor, descripcion, tipo_documento, n_documento, forma_pago, estado, centro_costo, tipos_gasto(nombre), empresas(nombre)'
       )
       .eq('cliente_id', clienteId)
       .in('rendicion_id', rendicionIds)
@@ -106,6 +106,7 @@ export default async function CajaChicaPage({ searchParams }: Props) {
         estado: EstadoGasto
         centro_costo: string | null
         tipos_gasto: { nombre: string } | null
+        empresas: { nombre: string } | null
       }
       const r = rendPorId.get(g.rendicion_id)
       return {
@@ -114,6 +115,7 @@ export default async function CajaChicaPage({ searchParams }: Props) {
         local: r?.local ?? '',
         fecha_gasto: g.fecha_gasto,
         tipo_gasto: g.tipos_gasto?.nombre ?? '',
+        empresa: g.empresas?.nombre ?? '',
         proveedor: g.proveedor ?? '',
         descripcion: g.descripcion ?? '',
         tipo_documento:

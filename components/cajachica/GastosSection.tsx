@@ -11,6 +11,7 @@ interface Props {
   gastos: GastoConTipo[]
   adjuntosPorGasto: Record<string, AdjuntoConUrl[]>
   tipos: { id: string; nombre: string }[]
+  empresas: { id: string; nombre: string }[]
   modoRevision: boolean
   modoEdicion: boolean
 }
@@ -25,6 +26,7 @@ export default function GastosSection({
   gastos,
   adjuntosPorGasto,
   tipos,
+  empresas,
   modoRevision,
   modoEdicion,
 }: Props) {
@@ -51,6 +53,7 @@ export default function GastosSection({
           rendicionId={rendicionId}
           clienteId={clienteId}
           tipos={tipos}
+          empresas={empresas}
           gastoEditar={editando}
           boletasExistentes={editando ? (adjuntosPorGasto[editando.id] ?? []) : []}
           onDone={() => setEditando(null)}

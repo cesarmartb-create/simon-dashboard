@@ -15,6 +15,7 @@ import { formatCLP, formatFechaCorta, cn } from '@/lib/utils'
 
 export type GastoConTipo = GastoCajaChica & {
   tipos_gasto: { nombre: string } | null
+  empresas: { nombre: string } | null
 }
 
 const ESTADO_GASTO_ESTILO: Record<EstadoGasto, string> = {
@@ -130,6 +131,11 @@ export default function GastosTabla({
                   </td>
                   <td className="px-3 py-2 text-gray-700">
                     {g.tipos_gasto?.nombre ?? '—'}
+                    {g.empresas?.nombre && (
+                      <span className="block text-xs text-gray-400">
+                        {g.empresas.nombre}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 py-2 text-gray-700 break-words">
                     {g.proveedor ?? '—'}
