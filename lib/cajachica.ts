@@ -15,11 +15,13 @@ export function puedeGestionarCajaChica(usuario: Usuario): boolean {
 }
 
 /**
- * Ve caja chica: qf (su local), admin, o gestor con 'caja_chica' en
- * areas ∪ areas_supervisa (spec 2b: quien solo supervisa ve todo sin botones).
+ * Ve caja chica: admin, cualquier usuario con local asignado (dueno de su
+ * unidad: qf o gestor de oficina con local), o gestor con 'caja_chica' en
+ * areas ∪ areas_supervisa (revisor / supervisor sin local).
  */
 export function puedeVerCajaChica(usuario: Usuario): boolean {
   if (usuario.rol === 'admin' || usuario.rol === 'qf') return true
+  if (usuario.local) return true // dueno de su unidad (gestor de oficina con local)
   const areasVisibles = [
     ...(usuario.areas ?? []),
     ...(usuario.areas_supervisa ?? []),
@@ -27,9 +29,12 @@ export function puedeVerCajaChica(usuario: Usuario): boolean {
   return usuario.rol === 'gestor' && areasVisibles.includes(AREA_CAJA_CHICA)
 }
 
-/** Crea rendiciones desde el portal: qf (su local) y admin. */
+/**
+ * Crea rendiciones desde el portal: admin, o cualquier usuario con local
+ * asignado (dueno de unidad: qf o gestor de oficina).
+ */
 export function puedeCrearRendicion(usuario: Usuario): boolean {
-  return usuario.rol === 'admin' || usuario.rol === 'qf'
+  return usuario.rol === 'admin' || !!usuario.local
 }
 
 /**

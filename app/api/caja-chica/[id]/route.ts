@@ -115,9 +115,10 @@ export async function PATCH(
   // ENVIAR: abierto -> en_revision (qf de su local o admin)
   // ------------------------------------------------------------------
   if (body.accion === 'enviar') {
+    // Dueno de unidad: admin o cualquier usuario cuyo local sea el de la rendicion.
     const puedeEnviar =
       usuario.rol === 'admin' ||
-      (usuario.rol === 'qf' && rendicion.local === (usuario.local ?? ''))
+      (!!usuario.local && rendicion.local === usuario.local)
     if (!puedeEnviar) {
       return NextResponse.json(
         { error: 'No puedes enviar esta rendición' },

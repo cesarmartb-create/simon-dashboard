@@ -64,9 +64,10 @@ export default async function RendicionDetallePage({ params }: Props) {
   }
 
   const gestiona = puedeGestionarCajaChica(usuario)
+  // Dueno de unidad: admin o cualquier usuario cuyo local sea el de la rendicion.
   const esResponsable =
     usuario.rol === 'admin' ||
-    (usuario.rol === 'qf' && rendicion.local === (usuario.local ?? ''))
+    (!!usuario.local && rendicion.local === usuario.local)
   const modoEdicion = rendicion.estado === 'abierto' && esResponsable
   const puedeEnviar = modoEdicion
   const modoRevision = gestiona && rendicion.estado === 'en_revision'

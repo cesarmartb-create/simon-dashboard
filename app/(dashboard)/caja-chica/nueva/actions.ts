@@ -31,16 +31,16 @@ export async function crearOAbrirRendicion(
     return { ok: false, error: 'Tu perfil no tiene cliente asignado.' }
   }
 
-  // qf: siempre su local. admin: el local seleccionado.
+  // Dueno de unidad: solo el admin elige local; el resto usa el suyo.
   const local =
-    usuario.rol === 'qf' ? (usuario.local ?? '') : (input.local ?? '').trim()
+    usuario.rol === 'admin' ? (input.local ?? '').trim() : (usuario.local ?? '')
   if (!local) {
     return {
       ok: false,
       error:
-        usuario.rol === 'qf'
-          ? 'Tu perfil no tiene local asignado.'
-          : 'Debes seleccionar un local.',
+        usuario.rol === 'admin'
+          ? 'Debes seleccionar un local.'
+          : 'Tu perfil no tiene local asignado.',
     }
   }
 

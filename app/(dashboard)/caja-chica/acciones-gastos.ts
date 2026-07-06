@@ -61,8 +61,9 @@ async function rendicionEditable(
   if (rendicion.estado !== 'abierto') {
     return { ok: false, error: 'La rendición ya no admite cambios en sus gastos.' }
   }
+  // Dueno de unidad: admin o cualquier usuario cuyo local sea el de la rendicion.
   const permitido =
-    rol === 'admin' || (rol === 'qf' && rendicion.local === (local ?? ''))
+    rol === 'admin' || (!!local && rendicion.local === local)
   if (!permitido) {
     return { ok: false, error: 'No puedes editar los gastos de esta rendición.' }
   }

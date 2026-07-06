@@ -44,7 +44,7 @@ export default async function NuevaRendicionPage() {
       <main className="flex-1 p-8 overflow-y-auto">
         <NuevaRendicionForm
           esAdmin={usuario.rol === 'admin'}
-          localFijo={usuario.rol === 'qf' ? (usuario.local ?? '') : null}
+          localFijo={usuario.rol === 'admin' ? null : (usuario.local ?? null)}
           locales={locales}
           periodoDefault={periodoDefault}
         />
