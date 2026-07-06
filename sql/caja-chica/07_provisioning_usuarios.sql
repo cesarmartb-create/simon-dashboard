@@ -87,3 +87,58 @@ commit;
 -- insert into public.areas_derivacion (cliente_id, nombre, responsable_correo, activo)
 --   values ('grupobaco','caja_chica','<<email_revisor_caja_chica>>', true)
 --   on conflict do nothing;
+
+-- =====================================================================
+-- FASE 4 - CAJAS PERSONALES DE OFICINA CENTRAL
+-- =====================================================================
+-- En Oficina Central cada persona tiene su PROPIA caja chica (rendicion
+-- personal). El modelo lo resuelve el "dueno de unidad" (SQL 09): cualquier
+-- usuario cuyo usuarios_cliente.local coincida con el local de la rendicion
+-- puede crear/cargar/enviar SU rendicion. Entonces cada persona de oficina
+-- necesita un LOCAL propio asignado.
+--
+-- CONVENCION CRITICA del string `local` (debe ser IDENTICO en todos lados):
+--   locales.codigo + ' — ' + locales.nombre   =>  "codigo — nombre"
+--   (mismo formato que usa el dropdown de locales / ajustes / rendiciones).
+-- El match es EXACTO: fondos_caja_chica.local, rendiciones.local, el saldo
+-- del listado y la rama dueno de la RLS comparan por ese string completo.
+-- Si usuarios_cliente.local no calza EXACTO con el "codigo — nombre" del
+-- local, la persona no vera su caja ni podra rendir.
+--
+-- PASO 1 (Cesar, en Configuracion -> Locales): crear los locales personales.
+--   Sugerencia de codigos (OC = Oficina Central):
+--     OC-CM  Cesar Martinez
+--     OC-JU  Julia ...
+--     OC-MA  Maria Andrea ...
+--     OC-NA  Nayarhet ...
+--     OC-MI  Mariela ...
+--   El string resultante sera, p. ej.: "OC-MA — Maria Andrea ...".
+--
+-- PASO 2 (SQL, aqui): asignar ese local a cada persona de oficina.
+--   Reemplazar por los user_id reales y el "codigo — nombre" EXACTO creado.
+--
+-- update public.usuarios_cliente
+--   set local = 'OC-CM — Cesar Martinez'
+--   where cliente_id='grupobaco' and user_id='<<UUID_AUTH_CESAR>>';
+-- update public.usuarios_cliente
+--   set local = 'OC-JU — Julia ...'
+--   where cliente_id='grupobaco' and user_id='<<UUID_AUTH_JULIA>>';
+-- update public.usuarios_cliente
+--   set local = 'OC-MA — Maria Andrea ...'
+--   where cliente_id='grupobaco' and user_id='<<UUID_AUTH_MARIA_ANDREA>>';
+-- update public.usuarios_cliente
+--   set local = 'OC-NA — Nayarhet ...'
+--   where cliente_id='grupobaco' and user_id='<<UUID_AUTH_NAYARHET>>';
+-- update public.usuarios_cliente
+--   set local = 'OC-MI — Mariela ...'
+--   where cliente_id='grupobaco' and user_id='<<UUID_AUTH_MARIELA>>';
+--
+-- NOTA sobre Maria Andrea: ya se le fijo areas=['operaciones'],
+--   areas_supervisa=['ajustes_inventario'] arriba; el update de arriba le
+--   AGREGA su local OC-MA para que sea duena de su caja personal (ve Caja
+--   chica de su unidad ademas de Casos y la supervision de Ajustes).
+--
+-- VERIFICACION:
+-- select user_id, rol, local, areas, areas_supervisa
+-- from public.usuarios_cliente
+-- where cliente_id='grupobaco' and local like 'OC-%';
