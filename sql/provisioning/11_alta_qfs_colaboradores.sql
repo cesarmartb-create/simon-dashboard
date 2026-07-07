@@ -9,8 +9,22 @@
 --     'codigo — nombre'. El form filtra .eq('local', codigo).
 --   - cargo  = 'jefe_de_local_quimico_farmaceutico' (slug EXACTO que
 --     filtra el form; en OFICINA seria 'gerente_comercial').
---   - activo = true, cliente_id = 'grupobaco', rol_portal = 'gestor'
---     (default de la tabla, se explicita).
+--   - activo = true, cliente_id = 'grupobaco'.
+--   - rol_portal = 'sin acceso' (asi esta la fila viva de Maria Paz,
+--     la QF que opera el panel hoy). rol_portal NO gobierna nada en el
+--     dashboard (solo se lee/edita en Configuracion -> Colaboradores);
+--     el acceso real lo da usuarios_cliente via perfil_actual(). El
+--     select "quien reporta" filtra por local+cargo+activo y no lo usa.
+--
+-- DESACOPLE CONOCIDO DE cargo (documentado, NO se corrige aqui):
+--   El catalogo public.cargos usa NOMBRES LEGIBLES ('Químico
+--   Farmacéutico', 'Gerente Comercial', ...). La UI de Configuracion ->
+--   Colaboradores guarda cargos.nombre, pero el form de casos/ajustes
+--   filtra por el SLUG 'jefe_de_local_quimico_farmaceutico'. O sea:
+--   un colaborador dado de alta por la UI queda con cargo legible y NO
+--   aparece en "quien reporta". Las filas vivas con slug (Maria Paz,
+--   Cesar) no salieron de esa UI. Este script inserta el SLUG directo,
+--   que es lo que el form necesita. Fix pendiente por separado.
 --
 -- SOBRE numero (NOT NULL + UNIQUE por cliente, constraint real de BD):
 --   Estas QF NO entran a la whitelist del bot todavia, asi que no tienen
@@ -70,7 +84,7 @@ select
   e.numero,
   'jefe_de_local_quimico_farmaceutico',
   e.local,
-  'gestor',
+  'sin acceso',
   true
 from entrada e
 where not exists (           -- idempotencia: no duplica ni pisa existentes
