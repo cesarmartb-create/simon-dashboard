@@ -9,7 +9,7 @@ import type { Usuario, Rol } from '@/types/usuario'
  */
 const USUARIOS: Record<string, Omit<Usuario, 'email'>> = {
   'cesar.martinez@grupobaco.cl': { nombre: 'César', rol: 'admin' },
-  'julia@grupobaco.cl': { nombre: 'Julia', rol: 'admin' },
+  'julia.salazar@grupobaco.cl': { nombre: 'Julia', rol: 'admin' },
   'helmuth@grupobaco.cl': { nombre: 'Helmuth', rol: 'admin' },
   'mandrea.pinzon@jcsfarmacias.cl': { nombre: 'María Andrea', rol: 'gestor' },
   'naya.gongora@jcsfarmacias.cl': { nombre: 'Nayarhet', rol: 'gestor' },
