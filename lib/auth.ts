@@ -13,6 +13,7 @@ const USUARIOS: Record<string, Omit<Usuario, 'email'>> = {
   'helmuth@grupobaco.cl': { nombre: 'Helmuth', rol: 'admin' },
   'mandrea.pinzon@jcsfarmacias.cl': { nombre: 'María Andrea', rol: 'gestor' },
   'naya.gongora@jcsfarmacias.cl': { nombre: 'Nayarhet', rol: 'gestor' },
+  'carolina.armingol@jcsfarmacias.cl': { nombre: 'Carolina', rol: 'gestor' },
   // Kathy queda fuera del piloto (rol 'operador' descontinuado).
 }
 
