@@ -6,11 +6,20 @@ import { useRouter } from 'next/navigation'
 interface Props {
   ajusteId: string
   montoActual: number | null
+  puedeValidar: boolean
+  puedeRealizar: boolean
+  puedeAnular: boolean
 }
 
-type Modo = null | 'realizado' | 'anulado'
+type Modo = null | 'validado' | 'realizado' | 'anulado'
 
-export default function AccionesAjuste({ ajusteId, montoActual }: Props) {
+export default function AccionesAjuste({
+  ajusteId,
+  montoActual,
+  puedeValidar,
+  puedeRealizar,
+  puedeAnular,
+}: Props) {
   const router = useRouter()
   const [modo, setModo] = useState<Modo>(null)
   const [folio, setFolio] = useState('')
@@ -53,7 +62,7 @@ export default function AccionesAjuste({ ajusteId, montoActual }: Props) {
         body.monto = null
       }
       if (observacion.trim()) body.observacion_cierre = observacion.trim()
-    } else {
+    } else if (modo === 'anulado') {
       if (!observacion.trim()) return
       body.observacion_cierre = observacion.trim()
     }
@@ -79,32 +88,70 @@ export default function AccionesAjuste({ ajusteId, montoActual }: Props) {
   }
 
   const puedeGuardar =
-    modo === 'realizado' ? !!folio.trim() : !!observacion.trim()
+    modo === 'validado'
+      ? true
+      : modo === 'realizado'
+        ? !!folio.trim()
+        : !!observacion.trim()
+
+  const tituloModal =
+    modo === 'validado'
+      ? 'Validar ajuste'
+      : modo === 'realizado'
+        ? 'Marcar como realizado'
+        : 'Anular ajuste'
+
+  const labelConfirmar =
+    modo === 'validado'
+      ? 'Confirmar validación'
+      : modo === 'realizado'
+        ? 'Confirmar realizado'
+        : 'Confirmar anulación'
 
   return (
     <div className="bg-white border border-gray-200 p-5 space-y-3">
       <div className="text-sm font-semibold text-gray-900">Acciones</div>
 
-      <button
-        onClick={() => abrir('realizado')}
-        className="w-full bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2 transition-colors"
-      >
-        Marcar realizado
-      </button>
+      {puedeValidar && (
+        <button
+          onClick={() => abrir('validado')}
+          className="w-full bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium py-2 transition-colors"
+        >
+          Validar
+        </button>
+      )}
 
-      <button
-        onClick={() => abrir('anulado')}
-        className="w-full border border-red-300 text-red-700 hover:bg-red-50 text-sm font-medium py-2 transition-colors"
-      >
-        Anular
-      </button>
+      {puedeRealizar && (
+        <button
+          onClick={() => abrir('realizado')}
+          className="w-full bg-accent hover:bg-accent-hover text-white text-sm font-medium py-2 transition-colors"
+        >
+          Marcar realizado
+        </button>
+      )}
+
+      {puedeAnular && (
+        <button
+          onClick={() => abrir('anulado')}
+          className="w-full border border-red-300 text-red-700 hover:bg-red-50 text-sm font-medium py-2 transition-colors"
+        >
+          Anular
+        </button>
+      )}
 
       {modo && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
           <div className="bg-white border border-gray-200 shadow-lg max-w-md w-full p-6 space-y-4">
             <div className="text-sm font-semibold text-gray-900">
-              {modo === 'realizado' ? 'Marcar como realizado' : 'Anular ajuste'}
+              {tituloModal}
             </div>
+
+            {modo === 'validado' && (
+              <p className="text-sm text-gray-700">
+                El ajuste quedará validado y disponible para que se realice en
+                el sistema. Se notificará por correo al encargado de ejecutarlo.
+              </p>
+            )}
 
             {modo === 'realizado' && (
               <>
@@ -138,24 +185,26 @@ export default function AccionesAjuste({ ajusteId, montoActual }: Props) {
               </>
             )}
 
-            <div>
-              <label className="block text-xs font-medium text-gray-700 mb-1">
-                {modo === 'realizado'
-                  ? 'Observación de cierre (opcional)'
-                  : 'Observación (obligatoria)'}
-              </label>
-              <textarea
-                value={observacion}
-                onChange={(e) => setObservacion(e.target.value)}
-                rows={3}
-                placeholder={
-                  modo === 'realizado'
-                    ? 'Notas del cierre…'
-                    : 'Motivo de la anulación…'
-                }
-                className="w-full px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent resize-none"
-              />
-            </div>
+            {modo !== 'validado' && (
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  {modo === 'realizado'
+                    ? 'Observación de cierre (opcional)'
+                    : 'Observación (obligatoria)'}
+                </label>
+                <textarea
+                  value={observacion}
+                  onChange={(e) => setObservacion(e.target.value)}
+                  rows={3}
+                  placeholder={
+                    modo === 'realizado'
+                      ? 'Notas del cierre…'
+                      : 'Motivo de la anulación…'
+                  }
+                  className="w-full px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent resize-none"
+                />
+              </div>
+            )}
 
             {error && (
               <div className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">
@@ -176,11 +225,7 @@ export default function AccionesAjuste({ ajusteId, montoActual }: Props) {
                 disabled={guardando || !puedeGuardar}
                 className="bg-accent hover:bg-accent-hover disabled:opacity-40 disabled:cursor-not-allowed text-white text-sm font-medium px-4 py-2 transition-colors"
               >
-                {guardando
-                  ? 'Guardando…'
-                  : modo === 'realizado'
-                    ? 'Confirmar realizado'
-                    : 'Confirmar anulación'}
+                {guardando ? 'Guardando…' : labelConfirmar}
               </button>
             </div>
           </div>

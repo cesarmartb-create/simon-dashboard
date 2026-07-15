@@ -42,8 +42,10 @@ export default function AjustesTabla({ ajustes }: Props) {
         <tbody className="divide-y divide-gray-100">
           {ajustes.map((ajuste) => {
             const dias = diasEntre(ajuste.created_at)
-            const pendiente = ajuste.estado === 'pendiente'
-            const alerta = pendiente && dias > DIAS_ALERTA
+            // Abierto = pendiente o validado: ambos envejecen y alertan.
+            const abierto =
+              ajuste.estado === 'pendiente' || ajuste.estado === 'validado'
+            const alerta = abierto && dias > DIAS_ALERTA
             return (
               <tr
                 key={ajuste.id}
@@ -85,7 +87,7 @@ export default function AjustesTabla({ ajustes }: Props) {
                     alerta ? 'font-semibold text-amber-700' : 'text-gray-500'
                   )}
                 >
-                  {pendiente ? dias : '—'}
+                  {abierto ? dias : '—'}
                 </td>
                 <td className="px-4 py-3 text-right">
                   <Link
