@@ -55,7 +55,7 @@ create policy ajustes_select on public.ajustes_inventario
   for select to authenticated
   using (
     exists (
-      select 1 from perfil_actual() p
+      select 1 from perfil_actual() p(cliente_id, rol, local, areas)
       where p.cliente_id = ajustes_inventario.cliente_id
         and (
           p.rol = 'admin'
@@ -86,7 +86,7 @@ create policy ajustes_update on public.ajustes_inventario
   for update to authenticated
   using (
     exists (
-      select 1 from perfil_actual() p
+      select 1 from perfil_actual() p(cliente_id, rol, local, areas)
       where p.cliente_id = ajustes_inventario.cliente_id
         and (
           p.rol = 'admin'
@@ -95,7 +95,7 @@ create policy ajustes_update on public.ajustes_inventario
     )
     or (
       exists (
-        select 1 from perfil_actual() p
+        select 1 from perfil_actual() p(cliente_id, rol, local, areas)
         where p.cliente_id = ajustes_inventario.cliente_id
           and p.rol = 'gestor'
           and 'ajustes_ejecucion' = any(coalesce(p.areas, '{}'::text[]))
@@ -105,7 +105,7 @@ create policy ajustes_update on public.ajustes_inventario
   )
   with check (
     exists (
-      select 1 from perfil_actual() p
+      select 1 from perfil_actual() p(cliente_id, rol, local, areas)
       where p.cliente_id = ajustes_inventario.cliente_id
         and (
           p.rol = 'admin'
@@ -114,7 +114,7 @@ create policy ajustes_update on public.ajustes_inventario
     )
     or (
       exists (
-        select 1 from perfil_actual() p
+        select 1 from perfil_actual() p(cliente_id, rol, local, areas)
         where p.cliente_id = ajustes_inventario.cliente_id
           and p.rol = 'gestor'
           and 'ajustes_ejecucion' = any(coalesce(p.areas, '{}'::text[]))
