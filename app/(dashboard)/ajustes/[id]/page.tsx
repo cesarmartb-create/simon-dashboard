@@ -6,7 +6,12 @@ import AccionesAjuste from '@/components/ajustes/AccionesAjuste'
 import AdjuntosPanel from '@/components/adjuntos/AdjuntosPanel'
 import { getUsuarioActual } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
-import { puedeVerAjustes, puedeGestionarAjustes } from '@/lib/ajustes'
+import {
+  puedeVerAjustes,
+  puedeValidarAjuste,
+  puedeRealizarAjuste,
+  puedeAnularAjuste,
+} from '@/lib/ajustes'
 import { nombreDesdeEmail } from '@/lib/auth'
 import { formatFecha, formatCLP } from '@/lib/utils'
 import { ADJUNTOS_BUCKET, type Adjunto, type AdjuntoConUrl } from '@/lib/adjuntos'
@@ -44,12 +49,16 @@ export default async function AjusteDetallePage({ params }: Props) {
 
   if (!ajuste) notFound()
 
-  // qf: solo ajustes de su propio local (las policies son permisivas).
+  // qf: solo ajustes de su propio local (la RLS ya lo fuerza; segunda capa).
   if (usuario.rol === 'qf' && ajuste.local !== (usuario.local ?? '')) {
     return sinAcceso
   }
 
-  const gestiona = puedeGestionarAjustes(usuario)
+  // Capacidades según rol y estado actual (la RLS las fuerza igual en la BD).
+  const puedeValidar = puedeValidarAjuste(usuario, ajuste.estado)
+  const puedeRealizar = puedeRealizarAjuste(usuario, ajuste.estado)
+  const puedeAnular = puedeAnularAjuste(usuario, ajuste.estado)
+  const muestraAcciones = puedeValidar || puedeRealizar || puedeAnular
 
   const { data: adjuntosData } = await supabase
     .from('adjuntos')
@@ -166,7 +175,27 @@ export default async function AjusteDetallePage({ params }: Props) {
               </section>
             )}
 
-            {ajuste.estado !== 'pendiente' && (
+            {ajuste.validado_por && (
+              <section className="bg-white border border-gray-200 p-5">
+                <h3 className="text-sm font-semibold text-gray-900 mb-3">
+                  Validación
+                </h3>
+                <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm">
+                  <div>
+                    <dt className="text-xs text-gray-500">Validado por</dt>
+                    <dd className="text-gray-900">{ajuste.validado_por}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs text-gray-500">Fecha validación</dt>
+                    <dd className="text-gray-900">
+                      {formatFecha(ajuste.fecha_validacion)}
+                    </dd>
+                  </div>
+                </dl>
+              </section>
+            )}
+
+            {(ajuste.estado === 'realizado' || ajuste.estado === 'anulado') && (
               <section className="bg-white border border-gray-200 p-5">
                 <h3 className="text-sm font-semibold text-gray-900 mb-3">
                   Cierre
@@ -211,11 +240,14 @@ export default async function AjusteDetallePage({ params }: Props) {
             />
           </div>
 
-          {gestiona && ajuste.estado === 'pendiente' && (
+          {muestraAcciones && (
             <div className="col-span-1">
               <AccionesAjuste
                 ajusteId={ajuste.id}
                 montoActual={ajuste.monto}
+                puedeValidar={puedeValidar}
+                puedeRealizar={puedeRealizar}
+                puedeAnular={puedeAnular}
               />
             </div>
           )}
