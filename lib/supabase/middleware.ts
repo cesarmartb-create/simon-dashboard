@@ -67,7 +67,7 @@ export async function updateSession(request: NextRequest) {
 
   if (user && path === '/login') {
     const url = request.nextUrl.clone()
-    url.pathname = '/casos'
+    url.pathname = '/'
     return NextResponse.redirect(url)
   }
 
@@ -100,7 +100,7 @@ export async function updateSession(request: NextRequest) {
       !puedeVerVistaGlobal(rol)
     ) {
       const url = request.nextUrl.clone()
-      url.pathname = '/casos'
+      url.pathname = '/'
       return NextResponse.redirect(url)
     }
 
@@ -108,7 +108,7 @@ export async function updateSession(request: NextRequest) {
     if (path.startsWith('/configuracion')) {
       if (!puedeAccederConfiguracion(rol)) {
         const url = request.nextUrl.clone()
-        url.pathname = '/casos'
+        url.pathname = '/'
         return NextResponse.redirect(url)
       }
 

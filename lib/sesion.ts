@@ -75,14 +75,14 @@ export const getUsuarioActual = cache(async (): Promise<Usuario> => {
 /** Métricas y Equipo: solo admin. */
 export async function requireVistaGlobal(): Promise<Usuario> {
   const usuario = await getUsuarioActual()
-  if (!puedeVerVistaGlobal(usuario.rol)) redirect('/casos')
+  if (!puedeVerVistaGlobal(usuario.rol)) redirect('/')
   return usuario
 }
 
 /** Sección Configuración: solo admin. */
 export async function requireConfiguracion(): Promise<Usuario> {
   const usuario = await getUsuarioActual()
-  if (!puedeAccederConfiguracion(usuario.rol)) redirect('/casos')
+  if (!puedeAccederConfiguracion(usuario.rol)) redirect('/')
   return usuario
 }
 
@@ -96,6 +96,6 @@ export async function requireAdmin(): Promise<Usuario> {
 /** Crear nuevas solicitudes: admin y qf. */
 export async function requireCrearCaso(): Promise<Usuario> {
   const usuario = await getUsuarioActual()
-  if (!puedeCrearCaso(usuario.rol)) redirect('/casos')
+  if (!puedeCrearCaso(usuario.rol)) redirect('/')
   return usuario
 }

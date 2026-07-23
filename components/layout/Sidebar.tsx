@@ -4,26 +4,12 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { Usuario } from '@/types/usuario'
 import { cn } from '@/lib/utils'
-import { puedeVerAjustes, AREA_AJUSTES, AREA_AJUSTES_EJECUCION } from '@/lib/ajustes'
-import { puedeVerCajaChica, AREA_CAJA_CHICA } from '@/lib/cajachica'
+import { puedeVerAjustes } from '@/lib/ajustes'
+import { puedeVerCajaChica } from '@/lib/cajachica'
+import { puedeVerCasos } from '@/lib/navegacion'
 
 interface Props {
   usuario: Usuario
-}
-
-// Areas que "gobiernan" un modulo propio. El resto de las areas son de
-// categorias de casos.
-const AREAS_MODULO = [AREA_AJUSTES, AREA_AJUSTES_EJECUCION, AREA_CAJA_CHICA]
-
-/**
- * Casos: admin y qf siempre; gestor si tiene alguna area (en areas ∪
- * areas_supervisa) que NO sea de modulo (Ajustes/Caja chica).
- * Ej: Maria Andrea (operaciones + supervisa ajustes) conserva Casos.
- */
-function puedeVerCasos(usuario: Usuario): boolean {
-  if (usuario.rol === 'admin' || usuario.rol === 'qf') return true
-  const areas = [...(usuario.areas ?? []), ...(usuario.areas_supervisa ?? [])]
-  return usuario.rol === 'gestor' && areas.some((a) => !AREAS_MODULO.includes(a))
 }
 
 const ITEMS: {

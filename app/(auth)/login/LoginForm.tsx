@@ -37,7 +37,7 @@ export default function LoginForm() {
       return
     }
 
-    router.push('/casos')
+    router.push('/')
     router.refresh()
   }
 
