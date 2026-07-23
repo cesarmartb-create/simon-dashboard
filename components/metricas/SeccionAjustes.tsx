@@ -72,19 +72,24 @@ export default async function SeccionAjustes({
   const ajustes = (data ?? []) as unknown as FilaAjuste[]
 
   const ahora = new Date()
-  const pendientes = ajustes.filter((a) => a.estado === 'pendiente')
+  // Abiertos = pendiente (por validar) + validado (por realizar).
+  const abiertos = ajustes.filter(
+    (a) => a.estado === 'pendiente' || a.estado === 'validado'
+  )
+  const pendientes = abiertos.filter((a) => a.estado === 'pendiente')
+  const validados = abiertos.filter((a) => a.estado === 'validado')
   const realizados = ajustes.filter((a) => a.estado === 'realizado')
 
-  // Card 1: pendientes + antigüedad del más antiguo.
-  const maxDias = pendientes.reduce(
+  // Card 1: abiertos + antigüedad del más antiguo.
+  const maxDias = abiertos.reduce(
     (m, a) => Math.max(m, diasEntre(a.created_at)),
     0
   )
-  const alertaPendientes = pendientes.length > 0 && maxDias > DIAS_ALERTA
+  const alertaPendientes = abiertos.length > 0 && maxDias > DIAS_ALERTA
   const subtextoPendientes =
-    pendientes.length === 0
-      ? 'Sin pendientes'
-      : `el más antiguo lleva ${maxDias} día${maxDias === 1 ? '' : 's'}`
+    abiertos.length === 0
+      ? 'Sin ajustes abiertos'
+      : `${pendientes.length} por validar · ${validados.length} validado${validados.length === 1 ? '' : 's'} · el más antiguo lleva ${maxDias} día${maxDias === 1 ? '' : 's'}`
 
   // Card 2: realizados con fecha_cierre del mes en curso.
   const realizadosMes = realizados.filter((a) => {
@@ -122,8 +127,8 @@ export default async function SeccionAjustes({
       0
     )
 
-  // Distribución: pendientes por tipo.
-  const porTipo = pendientes.reduce<Record<string, number>>((acc, a) => {
+  // Distribución: abiertos (pendientes + validados) por tipo.
+  const porTipo = abiertos.reduce<Record<string, number>>((acc, a) => {
     const t = a.tipos_ajuste?.nombre ?? 'Sin tipo'
     acc[t] = (acc[t] ?? 0) + 1
     return acc
@@ -144,8 +149,8 @@ export default async function SeccionAjustes({
 
       <div className="grid grid-cols-4 gap-4 mb-8">
         <Card
-          titulo="Ajustes pendientes"
-          valor={pendientes.length}
+          titulo="Ajustes abiertos"
+          valor={abiertos.length}
           subtitulo={subtextoPendientes}
           tono={alertaPendientes ? 'alerta' : undefined}
         />
@@ -172,7 +177,7 @@ export default async function SeccionAjustes({
       <div className="grid grid-cols-2 gap-6">
         <div className="bg-white border border-gray-200 p-5">
           <h3 className="text-sm font-semibold text-gray-900 mb-4">
-            Ajustes pendientes por tipo
+            Ajustes abiertos por tipo
           </h3>
           {tiposOrdenados.length === 0 ? (
             <div className="text-sm text-gray-500">Sin datos.</div>

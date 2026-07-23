@@ -125,7 +125,7 @@ export default function ColaboradoresTabla() {
     setEditandoId(null)
     setDatos({
       ...VACIO,
-      local: locales[0]?.nombre ?? '',
+      local: locales[0]?.codigo ?? locales[0]?.nombre ?? '',
       cargo: cargos[0]?.nombre ?? '',
     })
     setMostrarForm(true)
@@ -252,7 +252,9 @@ export default function ColaboradoresTabla() {
     setEliminando(null)
   }
 
-  const localEnLista = locales.some((l) => l.nombre === datos.local)
+  // colaboradores.local guarda el CODIGO ('F0313'); el form de casos/ajustes
+  // filtra por ese codigo, y aqui el option guarda l.codigo por lo mismo.
+  const localEnLista = locales.some((l) => (l.codigo ?? l.nombre) === datos.local)
   const cargoEnLista = cargos.some((c) => c.nombre === datos.cargo)
 
   return (
@@ -358,7 +360,7 @@ export default function ColaboradoresTabla() {
                   <option value={datos.local}>{datos.local}</option>
                 )}
                 {locales.map((l) => (
-                  <option key={l.id} value={l.nombre}>
+                  <option key={l.id} value={l.codigo ?? l.nombre}>
                     {l.codigo ? `${l.codigo} — ${l.nombre}` : l.nombre}
                   </option>
                 ))}

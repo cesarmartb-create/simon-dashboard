@@ -9,10 +9,14 @@ import type { Usuario, Rol } from '@/types/usuario'
  */
 const USUARIOS: Record<string, Omit<Usuario, 'email'>> = {
   'cesar.martinez@grupobaco.cl': { nombre: 'César', rol: 'admin' },
-  'julia@grupobaco.cl': { nombre: 'Julia', rol: 'admin' },
+  'julia.salazar@grupobaco.cl': { nombre: 'Julia', rol: 'admin' },
   'helmuth@grupobaco.cl': { nombre: 'Helmuth', rol: 'admin' },
   'mandrea.pinzon@jcsfarmacias.cl': { nombre: 'María Andrea', rol: 'gestor' },
   'naya.gongora@jcsfarmacias.cl': { nombre: 'Nayarhet', rol: 'gestor' },
+  'carolina.armingol@jcsfarmacias.cl': { nombre: 'Carolina', rol: 'gestor' },
+  // Ejecutor de ajustes (área ajustes_ejecucion); en el mapa solo para que
+  // su nombre salga en los correos (patrón sql/caja-chica/07).
+  'dyson.gonzalez@grupobaco.cl': { nombre: 'Dyson', rol: 'gestor' },
   // Kathy queda fuera del piloto (rol 'operador' descontinuado).
 }
 

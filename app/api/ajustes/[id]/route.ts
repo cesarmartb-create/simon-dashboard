@@ -1,7 +1,18 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { puedeGestionarAjustes, AREA_AJUSTES } from '@/lib/ajustes'
-import { notificarAjusteRealizado } from '@/lib/notificar'
+import {
+  puedeGestionarAjustes,
+  esEjecutorAjustes,
+  puedeValidarAjuste,
+  puedeRealizarAjuste,
+  puedeAnularAjuste,
+  AREA_AJUSTES,
+  AREA_AJUSTES_EJECUCION,
+} from '@/lib/ajustes'
+import {
+  notificarAjusteRealizado,
+  notificarAjusteValidado,
+} from '@/lib/notificar'
 import type { Rol, Usuario } from '@/types/usuario'
 import type { AjusteInventario } from '@/types/ajuste'
 
@@ -15,7 +26,7 @@ interface PerfilActual {
 }
 
 interface Body {
-  accion?: 'realizado' | 'anulado'
+  accion?: 'validado' | 'realizado' | 'anulado'
   folio_ajuste?: string
   monto?: number | null
   observacion_cierre?: string
@@ -23,6 +34,22 @@ interface Body {
 
 type AjusteConTipo = AjusteInventario & {
   tipos_ajuste: { nombre: string } | null
+}
+
+/** Correo del responsable de un área de derivación (null si no hay). */
+async function responsableDeArea(
+  supabase: ReturnType<typeof createClient>,
+  clienteId: string,
+  area: string
+): Promise<string | null> {
+  const { data } = await supabase
+    .from('areas_derivacion')
+    .select('responsable_correo')
+    .eq('cliente_id', clienteId)
+    .eq('nombre', area)
+    .eq('activo', true)
+    .maybeSingle<{ responsable_correo: string | null }>()
+  return data?.responsable_correo ?? null
 }
 
 export async function PATCH(
@@ -60,38 +87,120 @@ export async function PATCH(
     areas: perfil.areas,
   }
 
-  if (!puedeGestionarAjustes(usuario)) {
+  // Gate grueso: filtro/admin o ejecutor. La transición exacta se valida
+  // más abajo contra el estado actual del ajuste.
+  if (!puedeGestionarAjustes(usuario) && !esEjecutorAjustes(usuario)) {
     return NextResponse.json(
       { error: 'No tienes permiso para gestionar ajustes' },
       { status: 403 }
     )
   }
+  if (!usuario.cliente_id) {
+    return NextResponse.json(
+      { error: 'Tu perfil no tiene cliente asignado' },
+      { status: 401 }
+    )
+  }
 
   const body = (await request.json()) as Body
-  if (body.accion !== 'realizado' && body.accion !== 'anulado') {
+  if (
+    body.accion !== 'validado' &&
+    body.accion !== 'realizado' &&
+    body.accion !== 'anulado'
+  ) {
     return NextResponse.json({ error: 'Acción inválida' }, { status: 400 })
   }
 
+  // La RLS ya filtra por rol/estado (el ejecutor no ve pendientes); el
+  // .eq de cliente_id es la segunda capa multi-tenant en código.
   const { data: ajuste, error: errorFetch } = await supabase
     .from('ajustes_inventario')
     .select('*, tipos_ajuste(nombre)')
     .eq('id', params.id)
+    .eq('cliente_id', usuario.cliente_id)
     .maybeSingle<AjusteConTipo>()
 
   if (errorFetch || !ajuste) {
     return NextResponse.json({ error: 'Ajuste no encontrado' }, { status: 404 })
   }
-  if (ajuste.estado !== 'pendiente') {
-    return NextResponse.json(
-      { error: 'El ajuste ya no está pendiente' },
-      { status: 400 }
-    )
-  }
 
   const ahora = new Date().toISOString()
   const observacionCierre = (body.observacion_cierre ?? '').trim() || null
 
+  // --- Validar: solo filtro/admin, desde pendiente ---
+  if (body.accion === 'validado') {
+    if (!puedeValidarAjuste(usuario, ajuste.estado)) {
+      return NextResponse.json(
+        ajuste.estado !== 'pendiente'
+          ? { error: 'El ajuste ya no está pendiente' }
+          : { error: 'No tienes permiso para validar ajustes' },
+        { status: ajuste.estado !== 'pendiente' ? 400 : 403 }
+      )
+    }
+
+    const { error: errorUpdate } = await supabase
+      .from('ajustes_inventario')
+      .update({
+        estado: 'validado',
+        validado_por: usuario.email,
+        fecha_validacion: ahora,
+        updated_at: ahora,
+      })
+      .eq('id', params.id)
+
+    if (errorUpdate) {
+      return NextResponse.json({ error: errorUpdate.message }, { status: 500 })
+    }
+
+    // Evento de timeline. Si falla, el cambio de estado ya quedó aplicado:
+    // se loguea y no se aborta (a diferencia de casos, aquí el evento es
+    // auditoría secundaria de validado_por/fecha_validacion).
+    const { error: errorEvento } = await supabase.from('eventos').insert({
+      ajuste_id: params.id,
+      tipo: 'ajuste_validado',
+      detalle: 'Estado: pendiente → validado',
+      actor: usuario.email,
+      fecha: ahora,
+    })
+    if (errorEvento) {
+      console.error('[ajustes] Error insertando evento ajuste_validado:', errorEvento)
+    }
+
+    const ejecutorCorreo = await responsableDeArea(
+      supabase,
+      usuario.cliente_id,
+      AREA_AJUSTES_EJECUCION
+    )
+
+    await notificarAjusteValidado(
+      {
+        id: ajuste.id,
+        local: ajuste.local,
+        tipoNombre: ajuste.tipos_ajuste?.nombre ?? '—',
+        direccion: ajuste.direccion,
+        cantidadSku: ajuste.cantidad_sku,
+        monto: ajuste.monto,
+        folioOrigen: ajuste.folio_origen,
+        folioReferencia: ajuste.folio_referencia,
+        observacion: ajuste.observacion,
+      },
+      usuario.email,
+      ejecutorCorreo
+    )
+
+    return NextResponse.json({ ok: true })
+  }
+
+  // --- Anular: solo filtro/admin, desde pendiente o validado ---
   if (body.accion === 'anulado') {
+    if (!puedeAnularAjuste(usuario, ajuste.estado)) {
+      return NextResponse.json(
+        ajuste.estado === 'realizado' || ajuste.estado === 'anulado'
+          ? { error: 'El ajuste ya no se puede anular' }
+          : { error: 'No tienes permiso para anular ajustes' },
+        { status: ajuste.estado === 'realizado' || ajuste.estado === 'anulado' ? 400 : 403 }
+      )
+    }
     if (!observacionCierre) {
       return NextResponse.json(
         { error: 'La observación es obligatoria para anular' },
@@ -116,7 +225,16 @@ export async function PATCH(
     return NextResponse.json({ ok: true })
   }
 
-  // accion === 'realizado'
+  // --- Realizar: filtro/admin desde pendiente o validado; ejecutor solo desde validado ---
+  if (!puedeRealizarAjuste(usuario, ajuste.estado)) {
+    return NextResponse.json(
+      ajuste.estado === 'realizado' || ajuste.estado === 'anulado'
+        ? { error: 'El ajuste ya no está abierto' }
+        : { error: 'El ajuste aún no está validado' },
+      { status: 400 }
+    )
+  }
+
   const folio = (body.folio_ajuste ?? '').trim()
   if (!folio) {
     return NextResponse.json(
@@ -140,6 +258,14 @@ export async function PATCH(
     monto = body.monto
   }
 
+  // Realizar directo desde pendiente (filtro/admin) = validación implícita:
+  // se estampa validado_por/fecha_validacion con el mismo actor, así todo
+  // 'realizado' queda con su validación registrada.
+  const validacionImplicita =
+    ajuste.estado === 'pendiente'
+      ? { validado_por: usuario.email, fecha_validacion: ahora }
+      : {}
+
   const { error: errorUpdate } = await supabase
     .from('ajustes_inventario')
     .update({
@@ -150,6 +276,7 @@ export async function PATCH(
       fecha_cierre: ahora,
       observacion_cierre: observacionCierre,
       updated_at: ahora,
+      ...validacionImplicita,
     })
     .eq('id', params.id)
 
@@ -165,13 +292,11 @@ export async function PATCH(
   }
 
   // Responsable del área al momento de enviar (la tabla de ajustes no lo guarda).
-  const { data: area } = await supabase
-    .from('areas_derivacion')
-    .select('responsable_correo')
-    .eq('cliente_id', usuario.cliente_id ?? 'grupobaco')
-    .eq('nombre', AREA_AJUSTES)
-    .eq('activo', true)
-    .maybeSingle<{ responsable_correo: string | null }>()
+  const responsableCorreo = await responsableDeArea(
+    supabase,
+    usuario.cliente_id,
+    AREA_AJUSTES
+  )
 
   // Conteo real de adjuntos para la linea "Incluye N archivo(s)" del correo.
   const { count: numAdjuntos } = await supabase
@@ -179,7 +304,7 @@ export async function PATCH(
     .select('id', { count: 'exact', head: true })
     .eq('ajuste_id', params.id)
 
-  // Notificar: local que originó el ajuste + responsable del área + César.
+  // Notificar: local que originó el ajuste + responsable del área + copia permanente.
   await notificarAjusteRealizado(
     {
       id: ajuste.id,
@@ -193,7 +318,7 @@ export async function PATCH(
     },
     usuario.email,
     observacionCierre,
-    area?.responsable_correo ?? null,
+    responsableCorreo,
     numAdjuntos ?? 0
   )
 

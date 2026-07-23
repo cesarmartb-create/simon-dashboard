@@ -8,6 +8,13 @@ import {
 const SIMON_URL = 'https://simon-62wy.onrender.com/notificar-colaborador'
 const SENDGRID_URL = 'https://api.sendgrid.com/v3/mail/send'
 
+// Copia permanente de TODAS las notificaciones del sistema (casos y ajustes).
+// No incluye a los destinatarios por area ni a los correos de los locales.
+const COPIA_PERMANENTE = [
+  'cesar.martinez@grupobaco.cl',
+  'julia.salazar@grupobaco.cl',
+]
+
 function escapeHtml(valor: string): string {
   return valor
     .replace(/&/g, '&amp;')
@@ -211,9 +218,10 @@ export async function notificarEscalado(
   observacion: string,
   emailGestor: string
 ): Promise<void> {
-  const EXCLUIR_PILOTO = ['julia@grupobaco.cl', 'helmuth@grupobaco.cl']
+  // Helmuth sigue fuera de los correos de escalamiento (acordado en piloto).
+  const EXCLUIR = ['helmuth@grupobaco.cl']
   const destinatarios = Array.from(new Set(emailsPorRol('admin')))
-    .filter((e) => !EXCLUIR_PILOTO.includes(e))
+    .filter((e) => !EXCLUIR.includes(e))
 
   const tema = temaDe(caso)
   const colaborador = caso.colaborador_nombre ?? '—'
@@ -267,11 +275,11 @@ export async function notificarCierre(
   observacion: string,
   emailGestor: string
 ): Promise<void> {
-  // Piloto: el cierre se notifica a Cesar (fijo), al responsable del area
+  // El cierre se notifica a la copia permanente, al responsable del area
   // y al correo del local que genero el caso (solo casos del dashboard).
   // El filtro @ descarta valores null o que no sean correo (no romper SendGrid).
   const correos = [
-    'cesar.martinez@grupobaco.cl',
+    ...COPIA_PERMANENTE,
     caso.responsable,
     caso.local_correo,
   ].filter((e): e is string => typeof e === 'string' && e.includes('@'))
@@ -322,7 +330,7 @@ export async function notificarCierre(
 
 /**
  * Notifica por correo cuando entra una solicitud nueva desde el portal web.
- * Destinatarios: el responsable del área (si existe) + César.
+ * Destinatarios: el responsable del área (si existe) + copia permanente.
  * Nunca lanza: cualquier error se loguea y se descarta.
  */
 export async function notificarNuevoCaso(
@@ -331,10 +339,9 @@ export async function notificarNuevoCaso(
   responsableCorreo: string | null,
   numAdjuntos = 0
 ): Promise<void> {
-  const CESAR = 'cesar.martinez@grupobaco.cl'
   const destinatarios = Array.from(
     new Set([
-      CESAR,
+      ...COPIA_PERMANENTE,
       ...(responsableCorreo ? [responsableCorreo] : []),
     ])
   )
@@ -427,7 +434,7 @@ export async function notificarNuevoAjuste(
 ): Promise<void> {
   const destinatarios = Array.from(
     new Set(
-      [responsableCorreo, 'cesar.martinez@grupobaco.cl'].filter(
+      [responsableCorreo, ...COPIA_PERMANENTE].filter(
         (e): e is string => typeof e === 'string' && e.includes('@')
       )
     )
@@ -480,9 +487,79 @@ export async function notificarNuevoAjuste(
 }
 
 /**
+ * Notifica al ejecutor cuando un ajuste queda validado y listo para
+ * ejecutarse en el sistema. Destinatarios: responsable del área
+ * ajustes_ejecucion + copia permanente. Si el área no tiene responsable,
+ * el correo sale igual a la copia permanente con una fila de atención.
+ * Nunca lanza: cualquier error se loguea y se descarta.
+ */
+export async function notificarAjusteValidado(
+  ajuste: AjusteCorreo,
+  validadoPor: string,
+  ejecutorCorreo: string | null
+): Promise<void> {
+  const destinatarios = Array.from(
+    new Set(
+      [ejecutorCorreo, ...COPIA_PERMANENTE].filter(
+        (e): e is string => typeof e === 'string' && e.includes('@')
+      )
+    )
+  )
+
+  const link = linkAjuste(ajuste.id)
+  const direccionLabel = ajuste.direccion === 'alta' ? 'Alta' : 'Baja'
+  const sinEjecutor = !ejecutorCorreo
+
+  const filas: [string, string][] = [
+    ['Local', ajuste.local],
+    ['Tipo', ajuste.tipoNombre],
+    ['Dirección', direccionLabel],
+    ['Cantidad SKU', String(ajuste.cantidadSku)],
+    ['Monto', formatCLP(ajuste.monto)],
+  ]
+  if (ajuste.folioOrigen) filas.push(['Folio origen', ajuste.folioOrigen])
+  if (ajuste.folioReferencia)
+    filas.push(['Folio referencia', ajuste.folioReferencia])
+  if (ajuste.observacion) filas.push(['Observación', ajuste.observacion])
+  filas.push(['Validado por', nombreYEmail(validadoPor)])
+  if (sinEjecutor) {
+    filas.push([
+      'Atención',
+      'El área ajustes_ejecucion no tiene responsable asignado. Revisar Configuración → Derivaciones.',
+    ])
+  }
+
+  const intro = 'El ajuste fue validado y está listo para realizarse en el sistema.'
+  const texto = [
+    intro,
+    '',
+    ...filas.map(([k, v]) => `${k}: ${v}`),
+    '',
+    `Ver el ajuste: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: 'Ajuste de inventario validado',
+    headerColor: '#7C3AED',
+    intro,
+    filas,
+    link,
+    linkTexto: 'Ver el ajuste',
+  })
+
+  await enviarCorreoCaso({
+    destinatarios,
+    subject: `Ajuste validado — ${ajuste.local} — ${ajuste.tipoNombre} (${direccionLabel})`,
+    texto,
+    html,
+    contexto: 'ajuste validado',
+  })
+}
+
+/**
  * Notifica cuando un ajuste se marca realizado, informando folio y monto
  * final. Destinatarios: la casilla del local que originó el ajuste, el
- * responsable del área y César (mismo patrón que el cierre de casos).
+ * responsable del área y la copia permanente (mismo patrón que el cierre de casos).
  * Nunca lanza: cualquier error se loguea y se descarta.
  */
 export async function notificarAjusteRealizado(
@@ -497,7 +574,7 @@ export async function notificarAjusteRealizado(
       [
         ajuste.localCorreo,
         responsableCorreo,
-        'cesar.martinez@grupobaco.cl',
+        ...COPIA_PERMANENTE,
       ].filter((e): e is string => typeof e === 'string' && e.includes('@'))
     )
   )

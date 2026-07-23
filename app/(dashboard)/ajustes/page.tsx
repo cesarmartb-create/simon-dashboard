@@ -39,8 +39,9 @@ export default async function AjustesPage({ searchParams }: Props) {
     )
   }
 
-  // Las policies de ajustes_inventario son permisivas: el filtrado
-  // por rol se hace aquí, igual que en casos.
+  // La RLS real de ajustes_inventario ya filtra por rol/estado (el
+  // ejecutor solo recibe validados/realizados); este filtrado en código
+  // queda como segunda capa.
   let query = supabase
     .from('ajustes_inventario')
     .select('*, tipos_ajuste(nombre)')
@@ -61,10 +62,13 @@ export default async function AjustesPage({ searchParams }: Props) {
 
   const { data: rows, error } = await query
 
-  // Orden default: pendientes primero, más antiguos arriba.
+  // Orden default: pendientes primero, luego validados (la cola del
+  // ejecutor, que no ve pendientes), luego el resto; más antiguos arriba.
+  const prioridad = (estado: string) =>
+    estado === 'pendiente' ? 0 : estado === 'validado' ? 1 : 2
   const ajustes = ((rows ?? []) as AjusteConTipo[]).sort((a, b) => {
-    const pa = a.estado === 'pendiente' ? 0 : 1
-    const pb = b.estado === 'pendiente' ? 0 : 1
+    const pa = prioridad(a.estado)
+    const pb = prioridad(b.estado)
     if (pa !== pb) return pa - pb
     return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
   })

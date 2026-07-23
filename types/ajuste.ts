@@ -7,16 +7,18 @@ export const DIRECCION_AJUSTE_LABEL: Record<DireccionAjuste, string> = {
   baja: 'Baja',
 }
 
-export type EstadoAjuste = 'pendiente' | 'realizado' | 'anulado'
+export type EstadoAjuste = 'pendiente' | 'validado' | 'realizado' | 'anulado'
 
 export const ESTADOS_AJUSTE: EstadoAjuste[] = [
   'pendiente',
+  'validado',
   'realizado',
   'anulado',
 ]
 
 export const ESTADO_AJUSTE_LABEL: Record<EstadoAjuste, string> = {
   pendiente: 'Pendiente',
+  validado: 'Validado',
   realizado: 'Realizado',
   anulado: 'Anulado',
 }
@@ -45,6 +47,8 @@ export interface AjusteInventario {
   folio_referencia: string | null
   observacion: string | null
   estado: EstadoAjuste
+  validado_por: string | null
+  fecha_validacion: string | null
   folio_ajuste: string | null
   cerrado_por: string | null
   fecha_cierre: string | null
