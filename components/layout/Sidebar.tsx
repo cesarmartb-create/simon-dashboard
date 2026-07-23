@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { Usuario } from '@/types/usuario'
 import { cn } from '@/lib/utils'
-import { puedeVerAjustes, AREA_AJUSTES } from '@/lib/ajustes'
+import { puedeVerAjustes, AREA_AJUSTES, AREA_AJUSTES_EJECUCION } from '@/lib/ajustes'
 import { puedeVerCajaChica, AREA_CAJA_CHICA } from '@/lib/cajachica'
 
 interface Props {
@@ -13,7 +13,7 @@ interface Props {
 
 // Areas que "gobiernan" un modulo propio. El resto de las areas son de
 // categorias de casos.
-const AREAS_MODULO = [AREA_AJUSTES, AREA_CAJA_CHICA]
+const AREAS_MODULO = [AREA_AJUSTES, AREA_AJUSTES_EJECUCION, AREA_CAJA_CHICA]
 
 /**
  * Casos: admin y qf siempre; gestor si tiene alguna area (en areas ∪
