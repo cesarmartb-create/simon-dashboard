@@ -653,7 +653,7 @@ export async function notificarRendicionEnviada(
 ): Promise<void> {
   const destinatarios = Array.from(
     new Set(
-      [responsableCorreo, 'cesar.martinez@grupobaco.cl'].filter(
+      [responsableCorreo, ...COPIA_PERMANENTE].filter(
         (e): e is string => typeof e === 'string' && e.includes('@')
       )
     )
@@ -728,7 +728,7 @@ export async function notificarRendicionResuelta(
       [
         rendicion.localCorreo,
         responsableCorreo,
-        'cesar.martinez@grupobaco.cl',
+        ...COPIA_PERMANENTE,
       ].filter((e): e is string => typeof e === 'string' && e.includes('@'))
     )
   )
