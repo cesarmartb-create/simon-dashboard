@@ -210,6 +210,15 @@ export default function NuevaSolicitudForm({ clienteId, local }: Props) {
             </option>
           ))}
         </select>
+        {categoria === 'sensible' && (
+          <div className="mt-2 text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
+            Esta categoría es para acoso, hostigamiento y materias que podrían ser
+            Ley Karin. Simón no es un canal oficial de denuncias. Una denuncia formal
+            Ley Karin se realiza por el canal oficial ControlDoc (el QR del local) y
+            las denuncias de delitos económicos van a denuncia@grupobaco.cl. Si es un
+            problema operativo o de gestión del local, elige Operacional.
+          </div>
+        )}
       </div>
 
       <div className="flex flex-col">
