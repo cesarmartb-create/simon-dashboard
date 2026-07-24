@@ -17,6 +17,7 @@ const USUARIOS: Record<string, Omit<Usuario, 'email'>> = {
   // Ejecutor de ajustes (área ajustes_ejecucion); en el mapa solo para que
   // su nombre salga en los correos (patrón sql/caja-chica/07).
   'dyson.gonzalez@grupobaco.cl': { nombre: 'Dyson', rol: 'gestor' },
+  'mariela.martinez@grupobaco.cl': { nombre: 'Mariela', rol: 'gestor' },
   // Kathy queda fuera del piloto (rol 'operador' descontinuado).
 }
 
