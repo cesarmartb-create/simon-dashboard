@@ -33,6 +33,11 @@ export function formatFechaHora(fecha: string | null | undefined): string {
   })
 }
 
+/** Fecha de hoy en zona America/Santiago, como 'YYYY-MM-DD' (para comparar con inputs type=date). */
+export function hoyChile(): string {
+  return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' })
+}
+
 export function formatFechaCorta(fecha: string | null | undefined): string {
   if (!fecha) return '—'
   const d = new Date(fecha)

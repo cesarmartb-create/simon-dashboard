@@ -7,6 +7,7 @@ import { agregarGasto, editarGasto } from '@/app/(dashboard)/caja-chica/acciones
 import AdjuntosInput from '@/components/adjuntos/AdjuntosInput'
 import { registrarAdjuntos } from '@/components/adjuntos/actions'
 import { subirAdjuntos, type AdjuntoConUrl } from '@/lib/adjuntos'
+import { hoyChile } from '@/lib/utils'
 import {
   FORMAS_PAGO,
   FORMA_PAGO_LABEL,
@@ -122,6 +123,10 @@ export default function GastoForm({
       setError('Indica la fecha del gasto.')
       return
     }
+    if (fechaGasto > hoyChile()) {
+      setError('La fecha del gasto no puede ser futura.')
+      return
+    }
     if (!tipoGastoId) {
       setError('Selecciona el tipo de gasto.')
       return
@@ -226,6 +231,7 @@ export default function GastoForm({
             value={fechaGasto}
             onChange={(e) => setFechaGasto(e.target.value)}
             required
+            max={hoyChile()}
             className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
           />
         </div>
@@ -410,12 +416,16 @@ export default function GastoForm({
         </div>
       )}
 
-      <div>
-        <label className="text-xs font-medium text-gray-700 mb-1 block">
-          {boletaObligatoria ? 'Boleta / vale firmado' : 'Agregar otra boleta (opcional)'}
-        </label>
-        <AdjuntosInput archivos={boleta} onChange={setBoleta} disabled={guardando} />
-      </div>
+      <AdjuntosInput
+        archivos={boleta}
+        onChange={setBoleta}
+        disabled={guardando}
+        label={
+          boletaObligatoria
+            ? 'Boleta / vale firmado (obligatorio)'
+            : 'Agregar otra boleta (opcional)'
+        }
+      />
 
       {error && (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">

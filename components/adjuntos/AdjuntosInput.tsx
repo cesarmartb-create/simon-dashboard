@@ -13,6 +13,7 @@ interface Props {
   onChange: (archivos: File[]) => void
   disabled?: boolean
   max?: number
+  label?: string
 }
 
 /**
@@ -25,6 +26,7 @@ export default function AdjuntosInput({
   onChange,
   disabled,
   max = ADJUNTOS_MAX,
+  label = 'Adjuntos (opcional)',
 }: Props) {
   const inputRef = useRef<HTMLInputElement>(null)
   const [errores, setErrores] = useState<string[]>([])
@@ -68,9 +70,7 @@ export default function AdjuntosInput({
 
   return (
     <div className="flex flex-col gap-2">
-      <label className="text-xs font-medium text-gray-700">
-        Adjuntos (opcional)
-      </label>
+      <label className="text-xs font-medium text-gray-700">{label}</label>
       <p className="text-xs text-gray-500">
         PDF, JPG o PNG. Maximo {max} archivos, 10 MB cada uno.
       </p>

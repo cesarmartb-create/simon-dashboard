@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server'
 import { getUsuarioActual } from '@/lib/sesion'
+import { hoyChile } from '@/lib/utils'
 import type { SupabaseClient } from '@supabase/supabase-js'
 import {
   TIPOS_DOCUMENTO,
@@ -148,6 +149,9 @@ export async function agregarGasto(
   if (!input.fechaGasto || !/^\d{4}-\d{2}-\d{2}$/.test(input.fechaGasto)) {
     return { ok: false, error: 'Fecha del gasto inválida.' }
   }
+  if (input.fechaGasto > hoyChile()) {
+    return { ok: false, error: 'La fecha del gasto no puede ser futura.' }
+  }
   if (typeof input.monto !== 'number' || isNaN(input.monto) || input.monto <= 0) {
     return { ok: false, error: 'El monto debe ser mayor que cero.' }
   }
@@ -270,6 +274,9 @@ export async function editarGasto(
 
   if (!input.fechaGasto || !/^\d{4}-\d{2}-\d{2}$/.test(input.fechaGasto)) {
     return { ok: false, error: 'Fecha del gasto inválida.' }
+  }
+  if (input.fechaGasto > hoyChile()) {
+    return { ok: false, error: 'La fecha del gasto no puede ser futura.' }
   }
   if (typeof input.monto !== 'number' || isNaN(input.monto) || input.monto <= 0) {
     return { ok: false, error: 'El monto debe ser mayor que cero.' }
