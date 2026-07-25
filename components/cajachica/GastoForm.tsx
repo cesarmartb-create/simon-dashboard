@@ -27,6 +27,7 @@ interface Props {
   clienteId: string
   tipos: TipoOpcion[]
   empresas: TipoOpcion[]
+  empresaFija: { id: string; nombre: string } | null
   gastoEditar?: GastoConTipo | null
   boletasExistentes?: AdjuntoConUrl[]
   onDone?: () => void
@@ -37,6 +38,7 @@ export default function GastoForm({
   clienteId,
   tipos,
   empresas,
+  empresaFija,
   gastoEditar,
   boletasExistentes = [],
   onDone,
@@ -80,6 +82,13 @@ export default function GastoForm({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [gastoEditar?.id])
 
+  // Local con empresa fija (locales.empresa_id poblado): el selector queda
+  // bloqueado en esa empresa, tanto al crear como al editar.
+  useEffect(() => {
+    if (empresaFija) setEmpresaId(empresaFija.id)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [empresaFija?.id, gastoEditar?.id])
+
   function limpiar() {
     setFechaGasto('')
     setMonto('')
@@ -107,6 +116,10 @@ export default function GastoForm({
     }
     if (!fechaGasto) {
       setError('Indica la fecha del gasto.')
+      return
+    }
+    if (!empresaFija && !empresaId) {
+      setError('Debes seleccionar una empresa.')
       return
     }
 
@@ -247,21 +260,32 @@ export default function GastoForm({
       </div>
 
       <div className="flex flex-col">
-        <label className="text-xs font-medium text-gray-700 mb-1">
-          Empresa (opcional)
-        </label>
-        <select
-          value={empresaId}
-          onChange={(e) => setEmpresaId(e.target.value)}
-          className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
-        >
-          <option value="">Sin empresa</option>
-          {empresas.map((em) => (
-            <option key={em.id} value={em.id}>
-              {em.nombre}
+        <label className="text-xs font-medium text-gray-700 mb-1">Empresa</label>
+        {empresaFija ? (
+          <select
+            value={empresaFija.id}
+            disabled
+            className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent disabled:bg-gray-100 disabled:text-gray-400"
+          >
+            <option value={empresaFija.id}>{empresaFija.nombre}</option>
+          </select>
+        ) : (
+          <select
+            value={empresaId}
+            onChange={(e) => setEmpresaId(e.target.value)}
+            required
+            className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
+          >
+            <option value="" disabled>
+              Selecciona una empresa…
             </option>
-          ))}
-        </select>
+            {empresas.map((em) => (
+              <option key={em.id} value={em.id}>
+                {em.nombre}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <div className="grid grid-cols-2 gap-4">

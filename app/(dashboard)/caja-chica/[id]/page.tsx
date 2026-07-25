@@ -139,6 +139,25 @@ export default async function RendicionDetallePage({ params }: Props) {
     .order('orden', { ascending: true })
   const empresas = (empresasData ?? []) as { id: string; nombre: string }[]
 
+  // Empresa fija del local (locales.empresa_id), o null si es caja OC de eleccion libre.
+  const localCodigo = rendicion.local.split(' — ')[0]?.trim() ?? rendicion.local
+  const { data: localRow } = await supabase
+    .from('locales')
+    .select('empresa_id')
+    .eq('cliente_id', clienteId)
+    .eq('codigo', localCodigo)
+    .maybeSingle<{ empresa_id: string | null }>()
+
+  let empresaFija: { id: string; nombre: string } | null = null
+  if (localRow?.empresa_id) {
+    const { data: empresaRow } = await supabase
+      .from('empresas')
+      .select('id, nombre')
+      .eq('id', localRow.empresa_id)
+      .maybeSingle<{ id: string; nombre: string }>()
+    empresaFija = empresaRow ?? null
+  }
+
   const { data: config } = await supabase
     .from('configuracion_cliente')
     .select('instrucciones_caja_chica')
@@ -248,6 +267,7 @@ export default async function RendicionDetallePage({ params }: Props) {
               adjuntosPorGasto={adjuntosPorGasto}
               tipos={tipos}
               empresas={empresas}
+              empresaFija={empresaFija}
               modoRevision={modoRevision}
               modoEdicion={modoEdicion}
             />

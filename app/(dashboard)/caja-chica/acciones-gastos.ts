@@ -68,7 +68,7 @@ async function rendicionEditable(
   rol: string,
   local: string | null | undefined,
   rendicionId: string
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<{ ok: boolean; local?: string; error?: string }> {
   const { data: rendicion } = await supabase
     .from('rendiciones_caja_chica')
     .select('id, estado, local')
@@ -86,7 +86,23 @@ async function rendicionEditable(
   if (!permitido) {
     return { ok: false, error: 'No puedes editar los gastos de esta rendición.' }
   }
-  return { ok: true }
+  return { ok: true, local: rendicion.local }
+}
+
+/** empresa_id fija del local (locales.empresa_id), o null si es caja OC de eleccion libre. */
+async function empresaFijaDeLocal(
+  supabase: SupabaseClient,
+  clienteId: string,
+  local: string
+): Promise<string | null> {
+  const codigo = local.split(' — ')[0]?.trim() ?? local
+  const { data } = await supabase
+    .from('locales')
+    .select('empresa_id')
+    .eq('cliente_id', clienteId)
+    .eq('codigo', codigo)
+    .maybeSingle<{ empresa_id: string | null }>()
+  return data?.empresa_id ?? null
 }
 
 /** Recalcula rendiciones_caja_chica.total = suma de sus gastos. */
@@ -156,6 +172,17 @@ export async function agregarGasto(
     tipoGastoId = tipo.id
   }
 
+  if (!input.empresaId) {
+    return { ok: false, error: 'Debes seleccionar una empresa.' }
+  }
+  const empresaFijaId = await empresaFijaDeLocal(
+    supabase,
+    usuario.cliente_id,
+    editable.local!
+  )
+  if (empresaFijaId && input.empresaId !== empresaFijaId) {
+    return { ok: false, error: 'La empresa no coincide con la empresa fija del local.' }
+  }
   const emp = await validarEmpresa(supabase, usuario.cliente_id, input.empresaId)
   if (!emp.ok) return { ok: false, error: emp.error }
 
@@ -260,6 +287,17 @@ export async function editarGasto(
     tipoGastoIdEdit = tipo.id
   }
 
+  if (!input.empresaId) {
+    return { ok: false, error: 'Debes seleccionar una empresa.' }
+  }
+  const empresaFijaIdEdit = await empresaFijaDeLocal(
+    supabase,
+    usuario.cliente_id,
+    editableEdit.local!
+  )
+  if (empresaFijaIdEdit && input.empresaId !== empresaFijaIdEdit) {
+    return { ok: false, error: 'La empresa no coincide con la empresa fija del local.' }
+  }
   const empEdit = await validarEmpresa(supabase, usuario.cliente_id, input.empresaId)
   if (!empEdit.ok) return { ok: false, error: empEdit.error }
 
