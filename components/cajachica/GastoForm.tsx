@@ -422,8 +422,8 @@ export default function GastoForm({
         disabled={guardando}
         label={
           boletaObligatoria
-            ? 'Boleta / vale firmado (obligatorio)'
-            : 'Agregar otra boleta (opcional)'
+            ? 'Boleta / factura / vale firmado (obligatorio)'
+            : 'Agregar otro documento (opcional)'
         }
       />
 
