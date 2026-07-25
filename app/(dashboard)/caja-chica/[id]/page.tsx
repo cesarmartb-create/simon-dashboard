@@ -10,7 +10,7 @@ import TotalesPorEmpresa from '@/components/cajachica/TotalesPorEmpresa'
 import AdjuntosPanel from '@/components/adjuntos/AdjuntosPanel'
 import { getUsuarioActual } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
-import { puedeVerCajaChica, puedeGestionarCajaChica } from '@/lib/cajachica'
+import { puedeVerCajaChica, puedeGestionarCajaChica, excedeFondo } from '@/lib/cajachica'
 import { nombreDesdeEmail } from '@/lib/auth'
 import { formatFecha, formatCLP } from '@/lib/utils'
 import {
@@ -164,7 +164,22 @@ export default async function RendicionDetallePage({ params }: Props) {
     .eq('cliente_id', clienteId)
     .maybeSingle<{ instrucciones_caja_chica: string | null }>()
 
-  // Advertencia blanda al enviar: gastos sin adjunto de boleta.
+  // Advertencia en vivo (borrador): fondo vigente vs total actual.
+  let fondoExcedidoEnVivo: number | null = null
+  if (rendicion.estado === 'abierto') {
+    const { data: fondo } = await supabase
+      .from('fondos_caja_chica')
+      .select('monto_asignado')
+      .eq('cliente_id', clienteId)
+      .eq('local', rendicion.local)
+      .eq('activo', true)
+      .maybeSingle<{ monto_asignado: number }>()
+    if (fondo && excedeFondo(rendicion.total, fondo.monto_asignado)) {
+      fondoExcedidoEnVivo = fondo.monto_asignado
+    }
+  }
+
+  // Bloqueo de envio: gastos sin adjunto de boleta (ver AccionesRendicion).
   const gastosSinBoleta = gastos.filter(
     (g) => !(adjuntosPorGasto[g.id]?.length)
   ).length
@@ -259,6 +274,13 @@ export default async function RendicionDetallePage({ params }: Props) {
                 </div>
               </dl>
             </section>
+
+            {fondoExcedidoEnVivo != null && (
+              <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
+                El total supera el fondo asignado ({formatCLP(fondoExcedidoEnVivo)}).
+                Puedes enviar igual; quedará marcada para revisión.
+              </div>
+            )}
 
             <GastosSection
               rendicionId={rendicion.id}
