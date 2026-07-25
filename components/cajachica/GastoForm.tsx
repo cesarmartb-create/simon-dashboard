@@ -126,6 +126,10 @@ export default function GastoForm({
       setError('Indica el proveedor.')
       return
     }
+    if (tipoDocumento !== 'sin_documento' && !nDocumento.trim()) {
+      setError('Indica el N° de documento.')
+      return
+    }
 
     setGuardando(true)
 
@@ -330,15 +334,14 @@ export default function GastoForm({
 
       <div className="flex flex-col">
         <label className="text-xs font-medium text-gray-700 mb-1">
-          {tipoDocumento === 'sin_documento'
-            ? 'N° documento'
-            : 'N° documento (opcional)'}
+          N° documento
         </label>
         <input
           type="text"
           value={nDocumento}
           onChange={(e) => setNDocumento(e.target.value)}
           disabled={tipoDocumento === 'sin_documento'}
+          required={tipoDocumento !== 'sin_documento'}
           placeholder={
             tipoDocumento === 'sin_documento'
               ? 'Sin documento'

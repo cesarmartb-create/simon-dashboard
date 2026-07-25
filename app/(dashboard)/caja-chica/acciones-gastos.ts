@@ -160,6 +160,9 @@ export async function agregarGasto(
   if (!input.proveedor?.trim()) {
     return { ok: false, error: 'Debes indicar el proveedor.' }
   }
+  if (input.tipoDocumento !== 'sin_documento' && !input.nDocumento?.trim()) {
+    return { ok: false, error: 'Indica el N° de documento.' }
+  }
 
   // El tipo de gasto (si viene) debe ser del mismo cliente y estar activo.
   let tipoGastoId: string | null = null
@@ -278,6 +281,9 @@ export async function editarGasto(
   }
   if (!input.proveedor?.trim()) {
     return { ok: false, error: 'Debes indicar el proveedor.' }
+  }
+  if (input.tipoDocumento !== 'sin_documento' && !input.nDocumento?.trim()) {
+    return { ok: false, error: 'Indica el N° de documento.' }
   }
 
   let tipoGastoIdEdit: string | null = null
