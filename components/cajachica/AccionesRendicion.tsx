@@ -23,7 +23,6 @@ export default function AccionesRendicion({
   const [guardando, setGuardando] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [observacion, setObservacion] = useState('')
-  const [confirmandoEnvio, setConfirmandoEnvio] = useState(false)
 
   async function patch(body: Record<string, unknown>) {
     setError(null)
@@ -42,28 +41,29 @@ export default function AccionesRendicion({
     router.refresh()
   }
 
-  // Envio con advertencia blanda: si hay gastos sin boleta, pide confirmar.
   function onEnviar() {
-    if (gastosSinBoleta > 0 && !confirmandoEnvio) {
-      setConfirmandoEnvio(true)
-      return
-    }
-    setConfirmandoEnvio(false)
     patch({ accion: 'enviar' })
   }
 
   const puedeCerrar = gestiona && estado === 'en_revision'
   const puedePagar =
     gestiona && (estado === 'aprobada' || estado === 'aprobada_parcial')
-  const puedeEnviarAhora = puedeEnviar && estado === 'abierto'
+  // Bloqueo duro: no se puede enviar si algun gasto no tiene adjunto de
+  // respaldo (red de seguridad para gastos cargados antes de esta regla).
+  const puedeEnviarAhora =
+    puedeEnviar && estado === 'abierto' && gastosSinBoleta === 0
+  const bloqueadoPorAdjuntos =
+    puedeEnviar && estado === 'abierto' && gastosSinBoleta > 0
 
-  if (!puedeEnviarAhora && !puedeCerrar && !puedePagar) return null
+  if (!puedeEnviarAhora && !bloqueadoPorAdjuntos && !puedeCerrar && !puedePagar) {
+    return null
+  }
 
   return (
     <div className="bg-white border border-gray-200 p-5 space-y-3">
       <div className="text-sm font-semibold text-gray-900">Acciones</div>
 
-      {puedeEnviarAhora && !confirmandoEnvio && (
+      {puedeEnviarAhora && (
         <button
           onClick={onEnviar}
           disabled={guardando}
@@ -73,28 +73,10 @@ export default function AccionesRendicion({
         </button>
       )}
 
-      {puedeEnviarAhora && confirmandoEnvio && (
-        <div className="space-y-2">
-          <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
-            {gastosSinBoleta} gasto(s) van sin documento de respaldo. ¿Enviar de
-            todos modos?
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setConfirmandoEnvio(false)}
-              disabled={guardando}
-              className="flex-1 border border-gray-300 text-sm px-3 py-2 text-gray-700 hover:bg-gray-50 disabled:opacity-50 transition-colors"
-            >
-              Cancelar
-            </button>
-            <button
-              onClick={onEnviar}
-              disabled={guardando}
-              className="flex-1 bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium py-2 transition-colors"
-            >
-              {guardando ? 'Enviando…' : 'Enviar de todos modos'}
-            </button>
-          </div>
+      {bloqueadoPorAdjuntos && (
+        <div className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">
+          No puedes enviar: {gastosSinBoleta} gasto(s) sin documento de respaldo.
+          Agrega el adjunto antes de enviar.
         </div>
       )}
 

@@ -46,6 +46,10 @@ export default function GastoForm({
   const router = useRouter()
   const supabase = createClient()
   const editando = !!gastoEditar
+  // Al crear, o al editar un gasto sin adjunto (arrastrado de antes de esta
+  // regla), el respaldo es obligatorio. Editando uno que ya tiene adjunto, no
+  // se exige resubida.
+  const boletaObligatoria = !editando || boletasExistentes.length === 0
 
   const [fechaGasto, setFechaGasto] = useState('')
   const [monto, setMonto] = useState('')
@@ -128,6 +132,10 @@ export default function GastoForm({
     }
     if (tipoDocumento !== 'sin_documento' && !nDocumento.trim()) {
       setError('Indica el N° de documento.')
+      return
+    }
+    if (boletaObligatoria && boleta.length === 0) {
+      setError('Debes adjuntar boleta/vale firmado.')
       return
     }
 
@@ -397,7 +405,7 @@ export default function GastoForm({
 
       <div>
         <label className="text-xs font-medium text-gray-700 mb-1 block">
-          {editando ? 'Agregar otra boleta (opcional)' : 'Boleta (opcional)'}
+          {boletaObligatoria ? 'Boleta / vale firmado' : 'Agregar otra boleta (opcional)'}
         </label>
         <AdjuntosInput archivos={boleta} onChange={setBoleta} disabled={guardando} />
       </div>

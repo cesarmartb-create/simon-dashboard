@@ -135,7 +135,7 @@ export async function PATCH(
     // Correccion #4: debe tener al menos un gasto.
     const { data: gastos } = await supabase
       .from('gastos_caja_chica')
-      .select('monto')
+      .select('id, monto')
       .eq('rendicion_id', rendicion.id)
       .eq('cliente_id', usuario.cliente_id)
     if (!gastos || gastos.length === 0) {
@@ -145,6 +145,24 @@ export async function PATCH(
       )
     }
     const total = gastos.reduce((s, g) => s + Number(g.monto ?? 0), 0)
+
+    // Bloqueo duro: ningun gasto puede quedar sin adjunto de respaldo. Red de
+    // seguridad server-side para gastos cargados antes de esta regla o
+    // cualquier bypass del formulario.
+    const { data: adjuntosGastos } = await supabase
+      .from('adjuntos')
+      .select('gasto_id')
+      .in('gasto_id', gastos.map((g) => g.id))
+    const idsConAdjunto = new Set((adjuntosGastos ?? []).map((a) => a.gasto_id))
+    const sinAdjunto = gastos.filter((g) => !idsConAdjunto.has(g.id)).length
+    if (sinAdjunto > 0) {
+      return NextResponse.json(
+        {
+          error: `${sinAdjunto} gasto(s) no tienen documento de respaldo adjunto. Agrega el adjunto antes de enviar.`,
+        },
+        { status: 400 }
+      )
+    }
 
     // Fondo vigente de la unidad (o null si no tiene fila activa).
     const { data: fondo } = await supabase
