@@ -164,19 +164,20 @@ export async function agregarGasto(
     return { ok: false, error: 'Indica el N° de documento.' }
   }
 
-  // El tipo de gasto (si viene) debe ser del mismo cliente y estar activo.
-  let tipoGastoId: string | null = null
-  if (input.tipoGastoId) {
-    const { data: tipo } = await supabase
-      .from('tipos_gasto')
-      .select('id')
-      .eq('id', input.tipoGastoId)
-      .eq('cliente_id', usuario.cliente_id)
-      .eq('activo', true)
-      .maybeSingle<{ id: string }>()
-    if (!tipo) return { ok: false, error: 'Tipo de gasto inválido.' }
-    tipoGastoId = tipo.id
+  if (!input.tipoGastoId) {
+    return { ok: false, error: 'Selecciona el tipo de gasto.' }
   }
+
+  // El tipo de gasto debe ser del mismo cliente y estar activo.
+  const { data: tipo } = await supabase
+    .from('tipos_gasto')
+    .select('id')
+    .eq('id', input.tipoGastoId)
+    .eq('cliente_id', usuario.cliente_id)
+    .eq('activo', true)
+    .maybeSingle<{ id: string }>()
+  if (!tipo) return { ok: false, error: 'Tipo de gasto inválido.' }
+  const tipoGastoId = tipo.id
 
   if (!input.empresaId) {
     return { ok: false, error: 'Debes seleccionar una empresa.' }
@@ -286,18 +287,20 @@ export async function editarGasto(
     return { ok: false, error: 'Indica el N° de documento.' }
   }
 
-  let tipoGastoIdEdit: string | null = null
-  if (input.tipoGastoId) {
-    const { data: tipo } = await supabase
-      .from('tipos_gasto')
-      .select('id')
-      .eq('id', input.tipoGastoId)
-      .eq('cliente_id', usuario.cliente_id)
-      .eq('activo', true)
-      .maybeSingle<{ id: string }>()
-    if (!tipo) return { ok: false, error: 'Tipo de gasto inválido.' }
-    tipoGastoIdEdit = tipo.id
+  if (!input.tipoGastoId) {
+    return { ok: false, error: 'Selecciona el tipo de gasto.' }
   }
+
+  // El tipo de gasto debe ser del mismo cliente y estar activo.
+  const { data: tipo } = await supabase
+    .from('tipos_gasto')
+    .select('id')
+    .eq('id', input.tipoGastoId)
+    .eq('cliente_id', usuario.cliente_id)
+    .eq('activo', true)
+    .maybeSingle<{ id: string }>()
+  if (!tipo) return { ok: false, error: 'Tipo de gasto inválido.' }
+  const tipoGastoIdEdit = tipo.id
 
   if (!input.empresaId) {
     return { ok: false, error: 'Debes seleccionar una empresa.' }

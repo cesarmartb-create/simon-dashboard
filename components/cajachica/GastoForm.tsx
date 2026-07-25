@@ -122,6 +122,10 @@ export default function GastoForm({
       setError('Indica la fecha del gasto.')
       return
     }
+    if (!tipoGastoId) {
+      setError('Selecciona el tipo de gasto.')
+      return
+    }
     if (!empresaFija && !empresaId) {
       setError('Debes seleccionar una empresa.')
       return
@@ -247,9 +251,12 @@ export default function GastoForm({
           <select
             value={tipoGastoId}
             onChange={(e) => setTipoGastoId(e.target.value)}
+            required
             className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
           >
-            <option value="">Sin clasificar</option>
+            <option value="" disabled>
+              Selecciona un tipo…
+            </option>
             {tipos.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.nombre}
