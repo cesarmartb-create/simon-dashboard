@@ -157,6 +157,9 @@ export async function agregarGasto(
   if (!TIPOS_DOCUMENTO.includes(input.tipoDocumento)) {
     return { ok: false, error: 'Tipo de documento inválido.' }
   }
+  if (!input.proveedor?.trim()) {
+    return { ok: false, error: 'Debes indicar el proveedor.' }
+  }
 
   // El tipo de gasto (si viene) debe ser del mismo cliente y estar activo.
   let tipoGastoId: string | null = null
@@ -272,6 +275,9 @@ export async function editarGasto(
   }
   if (!TIPOS_DOCUMENTO.includes(input.tipoDocumento)) {
     return { ok: false, error: 'Tipo de documento inválido.' }
+  }
+  if (!input.proveedor?.trim()) {
+    return { ok: false, error: 'Debes indicar el proveedor.' }
   }
 
   let tipoGastoIdEdit: string | null = null

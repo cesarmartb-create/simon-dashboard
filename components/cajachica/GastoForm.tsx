@@ -122,6 +122,10 @@ export default function GastoForm({
       setError('Debes seleccionar una empresa.')
       return
     }
+    if (!proveedor.trim()) {
+      setError('Indica el proveedor.')
+      return
+    }
 
     setGuardando(true)
 
@@ -291,12 +295,13 @@ export default function GastoForm({
       <div className="grid grid-cols-2 gap-4">
         <div className="flex flex-col">
           <label className="text-xs font-medium text-gray-700 mb-1">
-            Proveedor (opcional)
+            Proveedor
           </label>
           <input
             type="text"
             value={proveedor}
             onChange={(e) => setProveedor(e.target.value)}
+            required
             placeholder="A quién se le pagó"
             className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
           />
