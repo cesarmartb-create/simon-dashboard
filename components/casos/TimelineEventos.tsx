@@ -17,6 +17,7 @@ const EVENTO_LABEL: Record<string, string> = {
   notificacion_pendiente: 'Notificación pendiente',
   ajuste_validado: 'Ajuste validado',
   comentario: 'Comentario',
+  recategorizado: 'Categoría cambiada',
 }
 
 export default function TimelineEventos({ eventos }: Props) {
