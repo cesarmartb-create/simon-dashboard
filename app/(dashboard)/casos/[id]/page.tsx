@@ -4,6 +4,7 @@ import Header from '@/components/layout/Header'
 import EstadoBadge from '@/components/casos/EstadoBadge'
 import TimelineEventos from '@/components/casos/TimelineEventos'
 import AgregarComentario from '@/components/casos/AgregarComentario'
+import RecategorizarCaso from '@/components/casos/RecategorizarCaso'
 import AccionesCaso from '@/components/casos/AccionesCaso'
 import AdjuntosPanel from '@/components/adjuntos/AdjuntosPanel'
 import { getUsuarioActual } from '@/lib/sesion'
@@ -201,7 +202,12 @@ export default async function CasoDetallePage({ params }: Props) {
           </div>
 
           {usuario.rol !== 'qf' && (
-            <div className="col-span-1">
+            <div className="col-span-1 space-y-6">
+              <RecategorizarCaso
+                casoId={caso.id}
+                categoriaActual={caso.categoria}
+                esAdmin={usuario.rol === 'admin'}
+              />
               <AccionesCaso casoId={caso.id} estadoActual={caso.estado} />
             </div>
           )}
