@@ -16,7 +16,7 @@ export const ESTADOS: EstadoCaso[] = [
 export const ESTADO_LABEL: Record<EstadoCaso, string> = {
   abierto: 'Abierto',
   en_gestion: 'En gestión',
-  esperando_empleado: 'Esperando empleado',
+  esperando_empleado: 'Esperando colaborador',
   cerrado: 'Cerrado',
   escalado: 'Escalado',
 }
