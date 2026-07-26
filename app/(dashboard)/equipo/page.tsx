@@ -1,6 +1,7 @@
 import Header from '@/components/layout/Header'
 import { requireVistaGlobal } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
+import { hoyChile } from '@/lib/utils'
 // gestores se derivan de areas_derivacion (correo real), no del mapa hardcodeado
 import {
   ESTADOS,
@@ -9,6 +10,14 @@ import {
   type Caso,
   type EstadoCaso,
 } from '@/types/caso'
+import type { EstadoAjuste } from '@/types/ajuste'
+
+/** 'YYYY-MM' de una fecha ISO, en zona America/Santiago (para cortes de mes). */
+function mesChile(fechaIso: string): string {
+  return new Date(fechaIso)
+    .toLocaleDateString('en-CA', { timeZone: 'America/Santiago' })
+    .slice(0, 7)
+}
 
 interface ResumenGestor {
   nombre: string
@@ -50,6 +59,45 @@ export default async function EquipoPage() {
     if (a.responsable_correo && !gestoresPorCorreo.has(a.responsable_correo)) {
       gestoresPorCorreo.set(a.responsable_correo, a.responsable_nombre)
     }
+  }
+
+  const mesActual = hoyChile().slice(0, 7)
+
+  const { data: ajustesData } = await supabase
+    .from('ajustes_inventario')
+    .select('estado, created_at, fecha_validacion, fecha_cierre')
+
+  const ajustes = (ajustesData ?? []) as {
+    estado: EstadoAjuste
+    created_at: string
+    fecha_validacion: string | null
+    fecha_cierre: string | null
+  }[]
+
+  const ajustesRealizados = ajustes.filter((a) => a.estado === 'realizado')
+  const horasAjuste = ajustesRealizados
+    .filter((a) => a.fecha_validacion && a.fecha_cierre)
+    .map(
+      (a) =>
+        (new Date(a.fecha_cierre as string).getTime() -
+          new Date(a.fecha_validacion as string).getTime()) /
+        (1000 * 60 * 60)
+    )
+
+  const resumenAjustes = {
+    pendientes: ajustes.filter((a) => a.estado === 'pendiente').length,
+    porEjecutar: ajustes.filter((a) => a.estado === 'validado').length,
+    ejecutorNombre:
+      areas.find((a) => a.nombre === 'ajustes_inventario')?.responsable_nombre ??
+      null,
+    realizadosMes: ajustesRealizados.filter(
+      (a) => a.fecha_cierre && mesChile(a.fecha_cierre) === mesActual
+    ).length,
+    anulados: ajustes.filter((a) => a.estado === 'anulado').length,
+    promedioHoras:
+      horasAjuste.length > 0
+        ? horasAjuste.reduce((a, b) => a + b, 0) / horasAjuste.length
+        : null,
   }
 
   const resumen: ResumenGestor[] = Array.from(gestoresPorCorreo.entries()).map(
@@ -165,6 +213,54 @@ export default async function EquipoPage() {
               </tbody>
             </table>
           </div>
+        </section>
+
+        <section className="bg-white border border-gray-200 p-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">Ajustes</h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Cola de trabajo del área, no asignación individual.
+          </p>
+          <dl className="grid grid-cols-2 md:grid-cols-5 gap-4 text-sm">
+            <div>
+              <dt className="text-xs text-gray-500">Pendientes</dt>
+              <dd className="text-lg font-semibold text-gray-900">
+                {resumenAjustes.pendientes}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">
+                Por ejecutar
+                {resumenAjustes.ejecutorNombre
+                  ? ` (cola actual: ${resumenAjustes.ejecutorNombre})`
+                  : ''}
+              </dt>
+              <dd className="text-lg font-semibold text-accent">
+                {resumenAjustes.porEjecutar}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">Realizados este mes</dt>
+              <dd className="text-lg font-semibold text-emerald-700">
+                {resumenAjustes.realizadosMes}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">Anulados</dt>
+              <dd className="text-lg font-semibold text-gray-900">
+                {resumenAjustes.anulados}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">Prom. validado → realizado</dt>
+              <dd className="text-lg font-semibold text-gray-700">
+                {resumenAjustes.promedioHoras === null
+                  ? '—'
+                  : resumenAjustes.promedioHoras < 24
+                    ? `${resumenAjustes.promedioHoras.toFixed(1)} h`
+                    : `${(resumenAjustes.promedioHoras / 24).toFixed(1)} d`}
+              </dd>
+            </div>
+          </dl>
         </section>
       </main>
     </>
