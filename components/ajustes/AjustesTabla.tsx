@@ -35,6 +35,7 @@ export default function AjustesTabla({ ajustes }: Props) {
             <th className="px-4 py-3 font-medium text-right">Cant. SKU</th>
             <th className="px-4 py-3 font-medium text-right">Monto</th>
             <th className="px-4 py-3 font-medium">Estado</th>
+            <th className="px-4 py-3 font-medium">Folio</th>
             <th className="px-4 py-3 font-medium text-right">Días</th>
             <th className="px-4 py-3 font-medium w-12"></th>
           </tr>
@@ -80,6 +81,9 @@ export default function AjustesTabla({ ajustes }: Props) {
                 </td>
                 <td className="px-4 py-3">
                   <EstadoAjusteBadge estado={ajuste.estado} />
+                </td>
+                <td className="px-4 py-3 text-gray-700">
+                  {ajuste.folio_ajuste ?? '—'}
                 </td>
                 <td
                   className={cn(
