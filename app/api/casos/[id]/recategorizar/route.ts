@@ -1,8 +1,18 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { getUsuario } from '@/lib/auth'
+import { nombreDesdeEmail } from '@/lib/auth'
 import { notificarRecategorizacion } from '@/lib/notificar'
+import type { Rol, Usuario } from '@/types/usuario'
 import { CATEGORIAS } from '@/types/caso'
+
+const ROLES_VALIDOS: Rol[] = ['admin', 'gestor', 'qf']
+
+interface PerfilActual {
+  cliente_id: string | null
+  rol: string | null
+  local: string | null
+  areas: string[] | null
+}
 
 interface Body {
   categoria_nueva?: string
@@ -17,11 +27,32 @@ export async function POST(
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
-  const usuario = getUsuario(user?.email)
-  if (!usuario || !user?.email) {
+  if (!user || !user.email) {
     return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
   }
+
+  const { data: perfil, error: errorPerfil } = await supabase
+    .rpc('perfil_actual')
+    .single<PerfilActual>()
+
+  if (
+    errorPerfil ||
+    !perfil ||
+    !perfil.rol ||
+    !ROLES_VALIDOS.includes(perfil.rol as Rol)
+  ) {
+    return NextResponse.json({ error: 'No autorizado' }, { status: 401 })
+  }
+
+  const usuario: Usuario = {
+    email: user.email.toLowerCase(),
+    nombre: nombreDesdeEmail(user.email),
+    rol: perfil.rol as Rol,
+    cliente_id: perfil.cliente_id,
+    local: perfil.local,
+    areas: perfil.areas,
+  }
+
   if (usuario.rol === 'qf') {
     return NextResponse.json(
       { error: 'No tienes permiso para recategorizar casos' },
