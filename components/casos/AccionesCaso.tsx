@@ -39,7 +39,6 @@ export default function AccionesCaso({ casoId, estadoActual }: Props) {
       observacion: observacion.trim(),
       estado_anterior: estadoActual,
     }
-    if (estado === 'esperando_empleado') body.notificar_colaborador = true
     if (estado === 'escalado') body.notificar_escalado = true
 
     const res = await fetch(`/api/casos/${casoId}`, {

@@ -18,7 +18,6 @@ interface Body {
   estado?: EstadoCaso
   observacion?: string
   estado_anterior?: EstadoCaso
-  notificar_colaborador?: boolean
   notificar_escalado?: boolean
 }
 
@@ -125,29 +124,6 @@ export async function PATCH(
   if (errorEvento) {
     console.error('[casos] Error insertando evento cambio_estado:', errorEvento)
     return NextResponse.json({ error: errorEvento.message }, { status: 500 })
-  }
-
-  // 3. Notificación al colaborador: por ahora solo se deja registrada como
-  //    pendiente. La integración real con WhatsApp se construye aparte.
-  if (body.notificar_colaborador) {
-    const { error: errorPendiente } = await supabase.from('eventos').insert({
-      caso_id: params.id,
-      tipo: 'notificacion_pendiente',
-      detalle: 'Pendiente notificar colaborador por WhatsApp',
-      actor: user.email,
-      fecha: ahora,
-    })
-
-    if (errorPendiente) {
-      console.error(
-        '[casos] Error insertando evento notificacion_pendiente:',
-        errorPendiente
-      )
-      return NextResponse.json(
-        { error: errorPendiente.message },
-        { status: 500 }
-      )
-    }
   }
 
   const casoCorreo = {
