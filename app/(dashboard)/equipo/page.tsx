@@ -1,7 +1,7 @@
 import Header from '@/components/layout/Header'
 import { requireVistaGlobal } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
-import { hoyChile } from '@/lib/utils'
+import { hoyChile, formatCLP } from '@/lib/utils'
 // gestores se derivan de areas_derivacion (correo real), no del mapa hardcodeado
 import {
   ESTADOS,
@@ -11,6 +11,7 @@ import {
   type EstadoCaso,
 } from '@/types/caso'
 import type { EstadoAjuste } from '@/types/ajuste'
+import type { EstadoRendicion } from '@/types/cajachica'
 
 /** 'YYYY-MM' de una fecha ISO, en zona America/Santiago (para cortes de mes). */
 function mesChile(fechaIso: string): string {
@@ -98,6 +99,40 @@ export default async function EquipoPage() {
       horasAjuste.length > 0
         ? horasAjuste.reduce((a, b) => a + b, 0) / horasAjuste.length
         : null,
+  }
+
+  const { data: rendicionesData } = await supabase
+    .from('rendiciones_caja_chica')
+    .select('estado, total, created_at, fecha_pago')
+
+  const rendiciones = (rendicionesData ?? []) as {
+    estado: EstadoRendicion
+    total: number
+    created_at: string
+    fecha_pago: string | null
+  }[]
+
+  const porPagar = rendiciones.filter(
+    (r) =>
+      (r.estado === 'aprobada' || r.estado === 'aprobada_parcial') &&
+      !r.fecha_pago
+  )
+  const pagadasMes = rendiciones.filter(
+    (r) =>
+      r.estado === 'pagado' &&
+      r.fecha_pago &&
+      mesChile(r.fecha_pago) === mesActual
+  )
+
+  const resumenCajaChica = {
+    porRevisar: rendiciones.filter((r) => r.estado === 'en_revision').length,
+    revisoraNombre:
+      areas.find((a) => a.nombre === 'caja_chica')?.responsable_nombre ?? null,
+    porPagarCount: porPagar.length,
+    porPagarMonto: porPagar.reduce((s, r) => s + Number(r.total ?? 0), 0),
+    pagadasMesCount: pagadasMes.length,
+    pagadasMesMonto: pagadasMes.reduce((s, r) => s + Number(r.total ?? 0), 0),
+    rechazadas: rendiciones.filter((r) => r.estado === 'rechazada').length,
   }
 
   const resumen: ResumenGestor[] = Array.from(gestoresPorCorreo.entries()).map(
@@ -258,6 +293,52 @@ export default async function EquipoPage() {
                   : resumenAjustes.promedioHoras < 24
                     ? `${resumenAjustes.promedioHoras.toFixed(1)} h`
                     : `${(resumenAjustes.promedioHoras / 24).toFixed(1)} d`}
+              </dd>
+            </div>
+          </dl>
+        </section>
+
+        <section className="bg-white border border-gray-200 p-5">
+          <h3 className="text-sm font-semibold text-gray-900 mb-1">
+            Caja Chica
+          </h3>
+          <p className="text-sm text-gray-500 mb-4">
+            Cola de trabajo del área, no asignación individual.
+          </p>
+          <dl className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <dt className="text-xs text-gray-500">
+                Por revisar
+                {resumenCajaChica.revisoraNombre
+                  ? ` (cola actual: ${resumenCajaChica.revisoraNombre})`
+                  : ''}
+              </dt>
+              <dd className="text-lg font-semibold text-accent">
+                {resumenCajaChica.porRevisar}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">Por pagar</dt>
+              <dd className="text-lg font-semibold text-gray-900">
+                {resumenCajaChica.porPagarCount}
+                <span className="block text-xs font-normal text-gray-500">
+                  {formatCLP(resumenCajaChica.porPagarMonto)}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">Pagadas este mes</dt>
+              <dd className="text-lg font-semibold text-emerald-700">
+                {resumenCajaChica.pagadasMesCount}
+                <span className="block text-xs font-normal text-gray-500">
+                  {formatCLP(resumenCajaChica.pagadasMesMonto)}
+                </span>
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-gray-500">Rechazadas</dt>
+              <dd className="text-lg font-semibold text-gray-900">
+                {resumenCajaChica.rechazadas}
               </dd>
             </div>
           </dl>
