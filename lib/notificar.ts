@@ -400,6 +400,62 @@ export async function notificarNuevoCaso(
   })
 }
 
+/**
+ * Notifica por correo a la contraparte cuando se agrega un comentario libre
+ * en un caso (bitácora). Nunca lanza: cualquier error se loguea y se
+ * descarta para no bloquear al usuario.
+ */
+export async function notificarComentarioCaso(
+  caso: CasoCorreo,
+  comentario: string,
+  autorEmail: string,
+  destinatario: string
+): Promise<void> {
+  const destinatarios = Array.from(new Set([...COPIA_PERMANENTE, destinatario]))
+
+  const tema = temaDe(caso)
+  const colaborador = caso.colaborador_nombre ?? '—'
+  const local = caso.local ?? '—'
+  const escritoPor = nombreYEmail(autorEmail)
+  const link = linkCaso(caso.id)
+
+  const filas: [string, string][] = [
+    ['Colaborador', colaborador],
+    ['Local', local],
+    ['Tema', tema],
+    ['Comentario', comentario],
+    ['Escrito por', escritoPor],
+  ]
+
+  const texto = [
+    'Se agregó un nuevo comentario en un caso.',
+    '',
+    `Colaborador: ${colaborador}`,
+    `Local: ${local}`,
+    `Tema: ${tema}`,
+    `Comentario: ${comentario}`,
+    `Escrito por: ${escritoPor}`,
+    '',
+    `Ver el caso: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: 'Nuevo comentario en caso',
+    headerColor: '#2563EB',
+    intro: 'Se agregó un nuevo comentario en un caso.',
+    filas,
+    link,
+  })
+
+  await enviarCorreoCaso({
+    destinatarios,
+    subject: `Nuevo comentario en caso — ${tema}`,
+    texto,
+    html,
+    contexto: 'comentario de caso',
+  })
+}
+
 // --- Correos de ajustes de inventario ---
 
 interface AjusteCorreo {
