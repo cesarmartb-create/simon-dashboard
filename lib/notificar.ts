@@ -458,6 +458,63 @@ export async function notificarComentarioCaso(
   })
 }
 
+/**
+ * Notifica por correo al nuevo responsable cuando un caso se recategoriza
+ * (cambia de área). Nunca lanza: cualquier error se loguea y se descarta
+ * para no bloquear al usuario.
+ */
+export async function notificarRecategorizacion(
+  caso: CasoCorreo,
+  categoriaAnterior: string,
+  categoriaNueva: string,
+  actorEmail: string,
+  destinatario: string
+): Promise<void> {
+  const destinatarios = Array.from(new Set([...COPIA_PERMANENTE, destinatario]))
+
+  const tema = temaDe(caso)
+  const colaborador = caso.colaborador_nombre ?? '—'
+  const local = caso.local ?? '—'
+  const cambiadoPor = nombreYEmail(actorEmail)
+  const link = linkCaso(caso.id)
+
+  const filas: [string, string][] = [
+    ['Colaborador', colaborador],
+    ['Local', local],
+    ['Categoría anterior', categoriaAnterior],
+    ['Categoría nueva', categoriaNueva],
+    ['Cambiado por', cambiadoPor],
+  ]
+
+  const texto = [
+    'Un caso fue recategorizado y asignado a tu área.',
+    '',
+    `Colaborador: ${colaborador}`,
+    `Local: ${local}`,
+    `Categoría anterior: ${categoriaAnterior}`,
+    `Categoría nueva: ${categoriaNueva}`,
+    `Cambiado por: ${cambiadoPor}`,
+    '',
+    `Ver el caso: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: 'Caso recategorizado',
+    headerColor: '#2563EB',
+    intro: 'Un caso fue recategorizado y asignado a tu área.',
+    filas,
+    link,
+  })
+
+  await enviarCorreoCaso({
+    destinatarios,
+    subject: `Caso recategorizado y asignado a tu área — ${tema}`,
+    texto,
+    html,
+    contexto: 'recategorizacion de caso',
+  })
+}
+
 // --- Correos de ajustes de inventario ---
 
 interface AjusteCorreo {
