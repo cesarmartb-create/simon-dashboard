@@ -409,9 +409,11 @@ export async function notificarComentarioCaso(
   caso: CasoCorreo,
   comentario: string,
   autorEmail: string,
-  destinatario: string
+  destinatarios: string[]
 ): Promise<void> {
-  const destinatarios = Array.from(new Set([...COPIA_PERMANENTE, destinatario]))
+  const destinatariosFinal = Array.from(
+    new Set([...COPIA_PERMANENTE, ...destinatarios])
+  )
 
   const tema = temaDe(caso)
   const colaborador = caso.colaborador_nombre ?? '—'
@@ -448,7 +450,7 @@ export async function notificarComentarioCaso(
   })
 
   await enviarCorreoCaso({
-    destinatarios,
+    destinatarios: destinatariosFinal,
     subject: `Nuevo comentario en caso — ${tema}`,
     texto,
     html,

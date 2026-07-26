@@ -60,12 +60,18 @@ export async function POST(
     return NextResponse.json({ error: errorEvento.message }, { status: 500 })
   }
 
-  // Contraparte: si escribe el QF (dueño del correo del local), se notifica
-  // al responsable del area; si escribe otro rol, se notifica al local.
-  const destinatario =
-    user.email === caso.local_correo ? caso.responsable : caso.local_correo
+  // Notifica a ambos interesados del caso (local y responsable), excepto a
+  // quien escribio el comentario.
+  const candidatos = [caso.local_correo, caso.responsable]
+  const destinatarios = Array.from(
+    new Set(
+      candidatos.filter(
+        (email): email is string => !!email && email !== user.email
+      )
+    )
+  )
 
-  if (destinatario) {
+  if (destinatarios.length > 0) {
     const casoCorreo = {
       id: caso.id as string,
       colaborador_nombre: caso.colaborador_nombre as string | null,
@@ -75,7 +81,7 @@ export async function POST(
       responsable: caso.responsable as string | null,
       local_correo: caso.local_correo as string | null,
     }
-    await notificarComentarioCaso(casoCorreo, comentario, user.email, destinatario)
+    await notificarComentarioCaso(casoCorreo, comentario, user.email, destinatarios)
   }
 
   return NextResponse.json({ ok: true })
