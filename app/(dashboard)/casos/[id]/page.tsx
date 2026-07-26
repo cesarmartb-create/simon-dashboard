@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import Header from '@/components/layout/Header'
 import EstadoBadge from '@/components/casos/EstadoBadge'
 import TimelineEventos from '@/components/casos/TimelineEventos'
+import AgregarComentario from '@/components/casos/AgregarComentario'
 import AccionesCaso from '@/components/casos/AccionesCaso'
 import AdjuntosPanel from '@/components/adjuntos/AdjuntosPanel'
 import { getUsuarioActual } from '@/lib/sesion'
@@ -187,6 +188,8 @@ export default async function CasoDetallePage({ params }: Props) {
               </h3>
               <TimelineEventos eventos={(eventos ?? []) as Evento[]} />
             </section>
+
+            <AgregarComentario casoId={caso.id} />
 
             <AdjuntosPanel
               entidad="casos"
