@@ -5,6 +5,20 @@ interface Props {
   eventos: Evento[]
 }
 
+// Los 10 valores permitidos por el check eventos_tipo_check.
+const EVENTO_LABEL: Record<string, string> = {
+  creado: 'Creado',
+  recordatorio: 'Recordatorio',
+  re_derivacion: 'Re-derivación',
+  escalado: 'Escalado',
+  cerrado: 'Cerrado',
+  reabierto: 'Reabierto',
+  cambio_estado: 'Cambio de estado',
+  notificacion_pendiente: 'Notificación pendiente',
+  ajuste_validado: 'Ajuste validado',
+  comentario: 'Comentario',
+}
+
 export default function TimelineEventos({ eventos }: Props) {
   if (eventos.length === 0) {
     return (
@@ -24,7 +38,9 @@ export default function TimelineEventos({ eventos }: Props) {
           </div>
           <div className="flex-1 pb-2">
             <div className="flex items-baseline justify-between gap-2">
-              <div className="text-sm font-medium text-gray-900">{ev.tipo}</div>
+              <div className="text-sm font-medium text-gray-900">
+                {EVENTO_LABEL[ev.tipo] ?? ev.tipo}
+              </div>
               <div className="text-xs text-gray-500 whitespace-nowrap">
                 {formatFechaHora(ev.fecha ?? ev.created_at)}
               </div>
