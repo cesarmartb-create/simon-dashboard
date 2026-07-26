@@ -89,7 +89,7 @@ export default async function EquipoPage() {
     pendientes: ajustes.filter((a) => a.estado === 'pendiente').length,
     porEjecutar: ajustes.filter((a) => a.estado === 'validado').length,
     ejecutorNombre:
-      areas.find((a) => a.nombre === 'ajustes_inventario')?.responsable_nombre ??
+      areas.find((a) => a.nombre === 'ajustes_ejecucion')?.responsable_nombre ??
       null,
     realizadosMes: ajustesRealizados.filter(
       (a) => a.fecha_cierre && mesChile(a.fecha_cierre) === mesActual
