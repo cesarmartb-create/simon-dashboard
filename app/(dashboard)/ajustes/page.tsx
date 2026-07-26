@@ -11,12 +11,13 @@ import {
   puedeGestionarAjustes,
   puedeCrearAjuste,
 } from '@/lib/ajustes'
+import { comoArray } from '@/lib/utils'
 
 interface Props {
   searchParams: {
-    estado?: string
-    tipo?: string
-    local?: string
+    estado?: string | string[]
+    tipo?: string | string[]
+    local?: string | string[]
   }
 }
 
@@ -39,6 +40,10 @@ export default async function AjustesPage({ searchParams }: Props) {
     )
   }
 
+  const estadosSel = comoArray(searchParams.estado)
+  const tiposSel = comoArray(searchParams.tipo)
+  const localesSel = comoArray(searchParams.local)
+
   // La RLS real de ajustes_inventario ya filtra por rol/estado (el
   // ejecutor solo recibe validados/realizados); este filtrado en código
   // queda como segunda capa.
@@ -49,15 +54,15 @@ export default async function AjustesPage({ searchParams }: Props) {
 
   if (usuario.rol === 'qf') {
     query = query.eq('local', usuario.local ?? '')
-  } else if (searchParams.local) {
-    query = query.eq('local', searchParams.local)
+  } else if (localesSel.length > 0) {
+    query = query.in('local', localesSel)
   }
 
-  if (searchParams.estado) {
-    query = query.eq('estado', searchParams.estado)
+  if (estadosSel.length > 0) {
+    query = query.in('estado', estadosSel)
   }
-  if (searchParams.tipo) {
-    query = query.eq('tipo_id', searchParams.tipo)
+  if (tiposSel.length > 0) {
+    query = query.in('tipo_id', tiposSel)
   }
 
   const { data: rows, error } = await query
