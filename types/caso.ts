@@ -21,6 +21,14 @@ export const ESTADO_LABEL: Record<EstadoCaso, string> = {
   escalado: 'Escalado',
 }
 
+export const CATEGORIAS: { value: string; label: string }[] = [
+  { value: 'operacional', label: 'Operacional' },
+  { value: 'recursos_humanos', label: 'Recursos Humanos' },
+  { value: 'prevencion_riesgos', label: 'Prevención de Riesgos' },
+  { value: 'sensible', label: 'Sensible' },
+  { value: 'accidente', label: 'Accidente' },
+]
+
 export interface Caso {
   id: string
   cliente_id: string | null

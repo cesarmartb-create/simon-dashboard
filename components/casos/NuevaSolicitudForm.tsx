@@ -11,19 +11,12 @@ import {
   notificarCasoCreado,
 } from '@/components/adjuntos/actions'
 import { subirAdjuntos } from '@/lib/adjuntos'
+import { CATEGORIAS } from '@/types/caso'
 
 interface Props {
   clienteId: string
   local: string
 }
-
-const CATEGORIAS: { value: string; label: string }[] = [
-  { value: 'operacional', label: 'Operacional' },
-  { value: 'recursos_humanos', label: 'Recursos Humanos' },
-  { value: 'prevencion_riesgos', label: 'Prevención de Riesgos' },
-  { value: 'sensible', label: 'Sensible' },
-  { value: 'accidente', label: 'Accidente' },
-]
 
 export default function NuevaSolicitudForm({ clienteId, local }: Props) {
   const router = useRouter()
