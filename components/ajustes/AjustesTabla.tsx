@@ -1,3 +1,6 @@
+'use client'
+
+import { useState } from 'react'
 import Link from 'next/link'
 import type { AjusteInventario } from '@/types/ajuste'
 import { DIRECCION_AJUSTE_LABEL } from '@/types/ajuste'
@@ -14,7 +17,91 @@ interface Props {
   ajustes: AjusteConTipo[]
 }
 
+type Direccion = 'asc' | 'desc'
+
+type Valor = string | number | null
+
+const ACCESORES: Record<string, (a: AjusteConTipo) => Valor> = {
+  fecha: (a) => new Date(a.created_at).getTime(),
+  local: (a) => a.local ?? '',
+  tipo: (a) => a.tipos_ajuste?.nombre ?? '',
+  direccion: (a) => a.direccion,
+  cantidad_sku: (a) => a.cantidad_sku,
+  monto: (a) => a.monto,
+  estado: (a) => a.estado,
+  folio: (a) => a.folio_ajuste,
+  dias: (a) => diasEntre(a.created_at),
+}
+
+function esVacio(v: Valor): boolean {
+  return v === null || v === ''
+}
+
+/**
+ * Folio es texto libre hoy (puede tener formato mixto): si ambos lados
+ * parsean como numero, compara numerico; si no, degrada a texto. Los
+ * vacios (folio y monto pueden ser null) siempre van al final.
+ */
+function comparar(
+  a: AjusteConTipo,
+  b: AjusteConTipo,
+  campo: string,
+  direccion: Direccion
+): number {
+  const signo = direccion === 'asc' ? 1 : -1
+  const va = ACCESORES[campo](a)
+  const vb = ACCESORES[campo](b)
+
+  const vaVacio = esVacio(va)
+  const vbVacio = esVacio(vb)
+  if (vaVacio && vbVacio) return 0
+  if (vaVacio) return 1
+  if (vbVacio) return -1
+
+  if (campo === 'folio') {
+    const na = Number(va)
+    const nb = Number(vb)
+    if (!isNaN(na) && !isNaN(nb)) return (na - nb) * signo
+    return String(va).localeCompare(String(vb)) * signo
+  }
+
+  if (typeof va === 'number' && typeof vb === 'number') {
+    return (va - vb) * signo
+  }
+
+  return String(va).localeCompare(String(vb)) * signo
+}
+
 export default function AjustesTabla({ ajustes }: Props) {
+  const [orden, setOrden] = useState<{ campo: string | null; direccion: Direccion }>(
+    { campo: null, direccion: 'asc' }
+  )
+
+  function ordenarPor(campo: string) {
+    setOrden((prev) =>
+      prev.campo === campo
+        ? { campo, direccion: prev.direccion === 'asc' ? 'desc' : 'asc' }
+        : { campo, direccion: 'asc' }
+    )
+  }
+
+  function thOrdenable(campo: string, label: string, alignRight = false) {
+    const activa = orden.campo === campo
+    return (
+      <th
+        key={campo}
+        onClick={() => ordenarPor(campo)}
+        className={cn(
+          'px-4 py-3 font-medium select-none cursor-pointer hover:text-gray-900',
+          alignRight && 'text-right'
+        )}
+      >
+        {label}
+        {activa && (orden.direccion === 'asc' ? ' ▲' : ' ▼')}
+      </th>
+    )
+  }
+
   if (ajustes.length === 0) {
     return (
       <div className="bg-white border border-gray-200 p-8 text-center text-sm text-gray-500">
@@ -23,25 +110,30 @@ export default function AjustesTabla({ ajustes }: Props) {
     )
   }
 
+  const filas =
+    orden.campo === null
+      ? ajustes
+      : [...ajustes].sort((a, b) => comparar(a, b, orden.campo!, orden.direccion))
+
   return (
     <div className="bg-white border border-gray-200 overflow-x-auto">
       <table className="w-full text-sm">
         <thead className="bg-gray-50 border-b border-gray-200">
           <tr className="text-left text-xs uppercase tracking-wide text-gray-600">
-            <th className="px-4 py-3 font-medium">Fecha</th>
-            <th className="px-4 py-3 font-medium">Local</th>
-            <th className="px-4 py-3 font-medium">Tipo</th>
-            <th className="px-4 py-3 font-medium">Dirección</th>
-            <th className="px-4 py-3 font-medium text-right">Cant. SKU</th>
-            <th className="px-4 py-3 font-medium text-right">Monto</th>
-            <th className="px-4 py-3 font-medium">Estado</th>
-            <th className="px-4 py-3 font-medium">Folio</th>
-            <th className="px-4 py-3 font-medium text-right">Días</th>
+            {thOrdenable('fecha', 'Fecha')}
+            {thOrdenable('local', 'Local')}
+            {thOrdenable('tipo', 'Tipo')}
+            {thOrdenable('direccion', 'Dirección')}
+            {thOrdenable('cantidad_sku', 'Cant. SKU', true)}
+            {thOrdenable('monto', 'Monto', true)}
+            {thOrdenable('estado', 'Estado')}
+            {thOrdenable('folio', 'Folio')}
+            {thOrdenable('dias', 'Días', true)}
             <th className="px-4 py-3 font-medium w-12"></th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-100">
-          {ajustes.map((ajuste) => {
+          {filas.map((ajuste) => {
             const dias = diasEntre(ajuste.created_at)
             // Abierto = pendiente o validado: ambos envejecen y alertan.
             const abierto =
