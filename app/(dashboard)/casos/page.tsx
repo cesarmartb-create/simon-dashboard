@@ -10,6 +10,7 @@ import {
   puedeCrearCaso,
   nombreDesdeEmail,
 } from '@/lib/auth'
+import { comoArray } from '@/lib/utils'
 import type { Caso } from '@/types/caso'
 
 interface Props {
@@ -19,10 +20,6 @@ interface Props {
     categoria?: string | string[]
     q?: string
   }
-}
-
-function comoArray(v?: string | string[]): string[] {
-  return !v ? [] : Array.isArray(v) ? v : [v]
 }
 
 export default async function CasosPage({ searchParams }: Props) {

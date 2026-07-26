@@ -38,6 +38,11 @@ export function hoyChile(): string {
   return new Date().toLocaleDateString('en-CA', { timeZone: 'America/Santiago' })
 }
 
+/** Normaliza un searchParam que puede venir como string, string[] o undefined. */
+export function comoArray(v?: string | string[]): string[] {
+  return !v ? [] : Array.isArray(v) ? v : [v]
+}
+
 export function formatFechaCorta(fecha: string | null | undefined): string {
   if (!fecha) return '—'
   const d = new Date(fecha)
