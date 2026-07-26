@@ -1,16 +1,18 @@
 'use client'
 
 import { useRouter, useSearchParams, usePathname } from 'next/navigation'
+import FiltroMultiple from '@/components/casos/FiltroMultiple'
 import { ESTADOS, ESTADO_LABEL } from '@/types/caso'
-import { nombresQueGestionanCasos, puedeVerVistaGlobal } from '@/lib/auth'
+import { puedeVerVistaGlobal } from '@/lib/auth'
 import type { Rol } from '@/types/usuario'
 
 interface Props {
   rol: Rol
   categorias: string[]
+  responsables: { value: string; label: string }[]
 }
 
-export default function FiltrosCasos({ rol, categorias }: Props) {
+export default function FiltrosCasos({ rol, categorias, responsables }: Props) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
@@ -22,12 +24,20 @@ export default function FiltrosCasos({ rol, categorias }: Props) {
     router.push(`${pathname}?${params.toString()}`)
   }
 
-  const estadoActual = searchParams.get('estado') ?? ''
-  const responsableActual = searchParams.get('responsable') ?? ''
-  const categoriaActual = searchParams.get('categoria') ?? ''
+  function actualizarMultiple(key: string, valores: string[]) {
+    const params = new URLSearchParams(searchParams.toString())
+    params.delete(key)
+    valores.forEach((v) => params.append(key, v))
+    router.push(`${pathname}?${params.toString()}`)
+  }
+
+  const estadosActuales = searchParams.getAll('estado')
+  const responsablesActuales = searchParams.getAll('responsable')
+  const categoriasActuales = searchParams.getAll('categoria')
   const busquedaActual = searchParams.get('q') ?? ''
 
-  const gestores = nombresQueGestionanCasos()
+  const opcionesEstado = ESTADOS.map((e) => ({ value: e, label: ESTADO_LABEL[e] }))
+  const opcionesCategoria = categorias.map((c) => ({ value: c, label: c }))
 
   return (
     <div className="flex flex-wrap items-end gap-3 mb-6">
@@ -45,59 +55,28 @@ export default function FiltrosCasos({ rol, categorias }: Props) {
         />
       </div>
 
-      <div className="flex flex-col">
-        <label className="text-xs font-medium text-gray-700 mb-1">Estado</label>
-        <select
-          value={estadoActual}
-          onChange={(e) => actualizar('estado', e.target.value)}
-          className="w-48 px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
-        >
-          <option value="">Todos</option>
-          {ESTADOS.map((e) => (
-            <option key={e} value={e}>
-              {ESTADO_LABEL[e]}
-            </option>
-          ))}
-        </select>
-      </div>
+      <FiltroMultiple
+        label="Estado"
+        opciones={opcionesEstado}
+        seleccionados={estadosActuales}
+        onChange={(v) => actualizarMultiple('estado', v)}
+      />
 
       {puedeVerVistaGlobal(rol) && (
-        <div className="flex flex-col">
-          <label className="text-xs font-medium text-gray-700 mb-1">
-            Responsable
-          </label>
-          <select
-            value={responsableActual}
-            onChange={(e) => actualizar('responsable', e.target.value)}
-            className="w-48 px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
-          >
-            <option value="">Todos</option>
-            {gestores.map((g) => (
-              <option key={g} value={g}>
-                {g}
-              </option>
-            ))}
-          </select>
-        </div>
+        <FiltroMultiple
+          label="Responsable"
+          opciones={responsables}
+          seleccionados={responsablesActuales}
+          onChange={(v) => actualizarMultiple('responsable', v)}
+        />
       )}
 
-      <div className="flex flex-col">
-        <label className="text-xs font-medium text-gray-700 mb-1">
-          Categoría
-        </label>
-        <select
-          value={categoriaActual}
-          onChange={(e) => actualizar('categoria', e.target.value)}
-          className="w-48 px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
-        >
-          <option value="">Todas</option>
-          {categorias.map((c) => (
-            <option key={c} value={c}>
-              {c}
-            </option>
-          ))}
-        </select>
-      </div>
+      <FiltroMultiple
+        label="Categoría"
+        opciones={opcionesCategoria}
+        seleccionados={categoriasActuales}
+        onChange={(v) => actualizarMultiple('categoria', v)}
+      />
     </div>
   )
 }
