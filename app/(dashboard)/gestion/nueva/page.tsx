@@ -17,6 +17,9 @@ export default async function NuevaGestionPage() {
     .select('codigo, nombre')
     .eq('cliente_id', clienteId)
     .eq('activo', true)
+    // Excluye las cajas de oficina de Caja Chica (codigo 'OC...'): Gestion
+    // es para farmacias con QF, no para cajas personales.
+    .not('codigo', 'ilike', 'OC%')
     .order('orden', { ascending: true })
 
   const locales = data ?? []
