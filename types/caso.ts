@@ -60,3 +60,13 @@ export interface Evento {
   created_at?: string
   fecha?: string
 }
+
+/** Version generica de Evento, sin caso_id, para reusar TimelineEventos con otras entidades. */
+export interface EventoTimeline {
+  id: string
+  tipo: string
+  detalle: string | null
+  actor: string | null
+  created_at?: string
+  fecha?: string
+}
