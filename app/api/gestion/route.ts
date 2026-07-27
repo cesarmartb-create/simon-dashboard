@@ -108,6 +108,10 @@ export async function POST(request: Request) {
       .select('codigo, nombre, correo')
       .eq('cliente_id', clienteId)
       .eq('activo', true)
+      // La tabla locales mezcla farmacias reales con cajas de oficina de
+      // Caja Chica (codigo 'OC...'); 'todos los locales' en Gestion es
+      // solo para farmacias, nunca cajas personales.
+      .not('codigo', 'ilike', 'OC%')
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
