@@ -154,6 +154,13 @@ export default async function GestionDetallePage({ params }: Props) {
 
             <AgregarComentario gestionId={fila.id} />
 
+            {fila.tipo === 'solicitud' && fila.estado === 'pendiente' && (
+              <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
+                Esto no responde la solicitud. Para marcarla como respondida, usa
+                &apos;Documento de respuesta&apos; en el panel de Acciones.
+              </div>
+            )}
+
             <AdjuntosPanel
               entidad="gestion"
               entidadId={fila.id}
