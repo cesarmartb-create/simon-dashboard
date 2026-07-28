@@ -8,6 +8,7 @@ import AgregarComentario from '@/components/gestion/AgregarComentario'
 import { getUsuarioActual } from '@/lib/sesion'
 import { createClient } from '@/lib/supabase/server'
 import { nombreDesdeEmail } from '@/lib/auth'
+import { puedeResponderGestion } from '@/lib/gestion'
 import { formatFecha } from '@/lib/utils'
 import { ADJUNTOS_BUCKET, type Adjunto, type AdjuntoConUrl } from '@/lib/adjuntos'
 import { TIPO_GESTION_LABEL, ESTADO_GESTION_LABEL, esVencida } from '@/types/gestion'
@@ -154,12 +155,15 @@ export default async function GestionDetallePage({ params }: Props) {
 
             <AgregarComentario gestionId={fila.id} />
 
-            {fila.tipo === 'solicitud' && fila.estado === 'pendiente' && (
-              <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
-                Esto no responde la solicitud. Para marcarla como respondida, usa
-                &apos;Documento de respuesta&apos; en el panel de Acciones.
-              </div>
-            )}
+            {fila.tipo === 'solicitud' &&
+              fila.estado === 'pendiente' &&
+              puedeResponderGestion(usuario, fila) && (
+                <div className="text-sm text-amber-800 bg-amber-50 border border-amber-200 px-3 py-2">
+                  Aquí está el documento de la solicitud (el que debes firmar). Para
+                  enviar tu respuesta ya firmada, usa el botón &apos;Responder&apos;
+                  que está arriba, en Acciones — no basta con adjuntarla aquí abajo.
+                </div>
+              )}
 
             <AdjuntosPanel
               entidad="gestion"
