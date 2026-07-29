@@ -100,7 +100,7 @@ export default function GastoForm({
     setProveedor('')
     setDescripcion('')
     setTipoGastoId('')
-    setEmpresaId('')
+    setEmpresaId(empresaFija ? empresaFija.id : '')
     setFormaPago('efectivo')
     setTipoDocumento('boleta')
     setNDocumento('')
