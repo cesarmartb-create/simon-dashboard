@@ -4,8 +4,8 @@ export type TipoGestion = 'solicitud' | 'memo' | 'comunicado'
 
 export const TIPO_GESTION_LABEL: Record<TipoGestion, string> = {
   solicitud: 'Solicitud',
-  memo: 'Memo',
-  comunicado: 'Comunicado',
+  memo: 'Comunicado Interno',
+  comunicado: 'Comunicado Simi',
 }
 
 export type EstadoGestion = 'pendiente' | 'respondida' | 'leida' | 'anulada'
