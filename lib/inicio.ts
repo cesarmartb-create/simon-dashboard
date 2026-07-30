@@ -2,16 +2,24 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { hoyChile } from '@/lib/utils'
 
 export interface ResumenCasos {
-  abiertos: number
-  escalados: number
+  abierto: number
+  enGestion: number
+  esperandoEmpleado: number
+  escalado: number
+  total: number
 }
 
 export interface ResumenAjustes {
-  pendientes: number
+  pendiente: number
+  validado: number
+  total: number
 }
 
 export interface ResumenCajaChica {
   enRevision: number
+  aprobada: number
+  aprobadaParcial: number
+  total: number
   excedeFondo: number
 }
 
@@ -23,7 +31,12 @@ export interface ResumenGestion {
 export async function cargarResumenCasos(
   supabase: SupabaseClient
 ): Promise<ResumenCasos> {
-  const [{ count: abiertos }, { count: escalados }] = await Promise.all([
+  const [
+    { count: abierto },
+    { count: enGestion },
+    { count: esperandoEmpleado },
+    { count: escalado },
+  ] = await Promise.all([
     supabase
       .from('casos')
       .select('id', { count: 'exact', head: true })
@@ -31,32 +44,56 @@ export async function cargarResumenCasos(
     supabase
       .from('casos')
       .select('id', { count: 'exact', head: true })
+      .eq('estado', 'en_gestion'),
+    supabase
+      .from('casos')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'esperando_empleado'),
+    supabase
+      .from('casos')
+      .select('id', { count: 'exact', head: true })
       .eq('estado', 'escalado'),
   ])
 
   return {
-    abiertos: abiertos ?? 0,
-    escalados: escalados ?? 0,
+    abierto: abierto ?? 0,
+    enGestion: enGestion ?? 0,
+    esperandoEmpleado: esperandoEmpleado ?? 0,
+    escalado: escalado ?? 0,
+    total: (abierto ?? 0) + (enGestion ?? 0) + (esperandoEmpleado ?? 0) + (escalado ?? 0),
   }
 }
 
 export async function cargarResumenAjustes(
   supabase: SupabaseClient
 ): Promise<ResumenAjustes> {
-  const { count: pendientes } = await supabase
-    .from('ajustes_inventario')
-    .select('id', { count: 'exact', head: true })
-    .eq('estado', 'pendiente')
+  const [{ count: pendiente }, { count: validado }] = await Promise.all([
+    supabase
+      .from('ajustes_inventario')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'pendiente'),
+    supabase
+      .from('ajustes_inventario')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'validado'),
+  ])
 
   return {
-    pendientes: pendientes ?? 0,
+    pendiente: pendiente ?? 0,
+    validado: validado ?? 0,
+    total: (pendiente ?? 0) + (validado ?? 0),
   }
 }
 
 export async function cargarResumenCajaChica(
   supabase: SupabaseClient
 ): Promise<ResumenCajaChica> {
-  const [{ count: enRevision }, { count: excedeFondo }] = await Promise.all([
+  const [
+    { count: enRevision },
+    { count: aprobada },
+    { count: aprobadaParcial },
+    { count: excedeFondo },
+  ] = await Promise.all([
     supabase
       .from('rendiciones_caja_chica')
       .select('id', { count: 'exact', head: true })
@@ -64,12 +101,23 @@ export async function cargarResumenCajaChica(
     supabase
       .from('rendiciones_caja_chica')
       .select('id', { count: 'exact', head: true })
-      .eq('estado', 'en_revision')
+      .eq('estado', 'aprobada'),
+    supabase
+      .from('rendiciones_caja_chica')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'aprobada_parcial'),
+    supabase
+      .from('rendiciones_caja_chica')
+      .select('id', { count: 'exact', head: true })
+      .in('estado', ['en_revision', 'aprobada', 'aprobada_parcial'])
       .eq('excede_fondo', true),
   ])
 
   return {
     enRevision: enRevision ?? 0,
+    aprobada: aprobada ?? 0,
+    aprobadaParcial: aprobadaParcial ?? 0,
+    total: (enRevision ?? 0) + (aprobada ?? 0) + (aprobadaParcial ?? 0),
     excedeFondo: excedeFondo ?? 0,
   }
 }

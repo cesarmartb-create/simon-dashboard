@@ -42,34 +42,46 @@ export default async function InicioPage() {
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           {resumenCasos && (
             <TarjetaModulo
-              href="/casos?estado=abierto"
+              href="/casos?estado=abierto&estado=en_gestion&estado=esperando_empleado&estado=escalado"
               titulo="Casos"
-              numero={resumenCasos.abiertos}
-              etiqueta="abiertos"
-              badge={
-                resumenCasos.escalados > 0
-                  ? `${resumenCasos.escalados} escalados`
-                  : undefined
-              }
-              badgeTono="danger"
+              numero={resumenCasos.total}
+              etiqueta="activos"
+              desglose={[
+                { etiqueta: 'abiertos', cantidad: resumenCasos.abierto, color: 'gray' },
+                { etiqueta: 'en gestión', cantidad: resumenCasos.enGestion, color: 'blue' },
+                { etiqueta: 'esperando', cantidad: resumenCasos.esperandoEmpleado, color: 'amber' },
+                { etiqueta: 'escalados', cantidad: resumenCasos.escalado, color: 'red' },
+              ]}
             />
           )}
 
           {resumenAjustes && (
             <TarjetaModulo
-              href="/ajustes?estado=pendiente"
+              href="/ajustes?estado=pendiente&estado=validado"
               titulo="Ajustes"
-              numero={resumenAjustes.pendientes}
-              etiqueta="pendientes de validar"
+              numero={resumenAjustes.total}
+              etiqueta="activos"
+              desglose={[
+                { etiqueta: 'pendientes', cantidad: resumenAjustes.pendiente, color: 'amber' },
+                { etiqueta: 'validados', cantidad: resumenAjustes.validado, color: 'blue' },
+              ]}
             />
           )}
 
           {resumenCajaChica && (
             <TarjetaModulo
-              href="/caja-chica?estado=en_revision"
+              href="/caja-chica?estado=en_revision&estado=aprobada&estado=aprobada_parcial"
               titulo="Caja chica"
-              numero={resumenCajaChica.enRevision}
-              etiqueta="en revisión"
+              numero={resumenCajaChica.total}
+              etiqueta="activas"
+              desglose={[
+                { etiqueta: 'en revisión', cantidad: resumenCajaChica.enRevision, color: 'amber' },
+                {
+                  etiqueta: 'aprobadas',
+                  cantidad: resumenCajaChica.aprobada + resumenCajaChica.aprobadaParcial,
+                  color: 'blue',
+                },
+              ]}
               badge={
                 resumenCajaChica.excedeFondo > 0
                   ? `${resumenCajaChica.excedeFondo} excede fondo`
