@@ -27,7 +27,7 @@ export async function cargarResumenCasos(
     supabase
       .from('casos')
       .select('id', { count: 'exact', head: true })
-      .neq('estado', 'cerrado'),
+      .eq('estado', 'abierto'),
     supabase
       .from('casos')
       .select('id', { count: 'exact', head: true })
