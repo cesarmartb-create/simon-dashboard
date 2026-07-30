@@ -17,6 +17,7 @@ const ITEMS: {
   label: string
   visible: (u: Usuario) => boolean
 }[] = [
+  { href: '/inicio', label: 'Inicio', visible: () => true },
   { href: '/casos', label: 'Casos', visible: puedeVerCasos },
   { href: '/ajustes', label: 'Ajustes', visible: puedeVerAjustes },
   { href: '/caja-chica', label: 'Caja chica', visible: puedeVerCajaChica },
