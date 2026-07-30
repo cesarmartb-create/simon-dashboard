@@ -33,7 +33,11 @@ export default function ResponderGestion({ fila, usuario }: Props) {
     setError(null)
 
     if (accion === 'responder') {
-      if (archivos.length === 0) {
+      const exigeAdjunto =
+        fila.tipo === 'solicitud' ||
+        (fila.tipo === 'solicitud_simple' && fila.requiere_adjunto === true)
+
+      if (exigeAdjunto && archivos.length === 0) {
         setGuardando(false)
         setError('Debes adjuntar el documento antes de responder.')
         return
@@ -87,7 +91,9 @@ export default function ResponderGestion({ fila, usuario }: Props) {
     <div className="bg-white border border-gray-200 p-5 space-y-4">
       <div className="text-sm font-semibold text-gray-900">Acciones</div>
 
-      {puedeResponder && fila.tipo === 'solicitud' && (
+      {puedeResponder &&
+        (fila.tipo === 'solicitud' ||
+          (fila.tipo === 'solicitud_simple' && fila.requiere_adjunto === true)) && (
         <div className="space-y-3">
           <AdjuntosInput
             archivos={archivos}
@@ -112,6 +118,16 @@ export default function ResponderGestion({ fila, usuario }: Props) {
           className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-4 py-2 transition-colors"
         >
           {guardando ? 'Guardando…' : 'Marcar como leído'}
+        </button>
+      )}
+
+      {puedeResponder && fila.tipo === 'solicitud_simple' && fila.requiere_adjunto === false && (
+        <button
+          onClick={() => ejecutarAccion('responder')}
+          disabled={guardando}
+          className="bg-accent hover:bg-accent-hover disabled:opacity-50 text-white text-sm font-medium px-4 py-2 transition-colors"
+        >
+          {guardando ? 'Guardando…' : 'Acuse de recibo'}
         </button>
       )}
 

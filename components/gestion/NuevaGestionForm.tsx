@@ -21,7 +21,7 @@ interface RespuestaCreacion {
   ids: string[]
 }
 
-const TIPOS: TipoGestion[] = ['solicitud', 'memo', 'comunicado']
+const TIPOS: TipoGestion[] = ['solicitud', 'solicitud_simple', 'memo', 'comunicado']
 
 export default function NuevaGestionForm({ clienteId, locales }: Props) {
   const router = useRouter()
@@ -29,6 +29,7 @@ export default function NuevaGestionForm({ clienteId, locales }: Props) {
 
   const [tipo, setTipo] = useState<TipoGestion>('solicitud')
   const [folioExterno, setFolioExterno] = useState('')
+  const [requiereAdjunto, setRequiereAdjunto] = useState(true)
   const [destinoModo, setDestinoModo] = useState<'local' | 'todos'>('local')
   const [destinoCodigo, setDestinoCodigo] = useState(locales[0]?.codigo ?? '')
   const [titulo, setTitulo] = useState('')
@@ -62,6 +63,7 @@ export default function NuevaGestionForm({ clienteId, locales }: Props) {
         fecha_limite: fechaLimite || undefined,
         folio_externo:
           tipo === 'comunicado' ? folioExterno.trim() || undefined : undefined,
+        requiere_adjunto: tipo === 'solicitud_simple' ? requiereAdjunto : undefined,
       }),
     })
 
@@ -167,6 +169,17 @@ export default function NuevaGestionForm({ clienteId, locales }: Props) {
             className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
           />
         </div>
+      )}
+
+      {tipo === 'solicitud_simple' && (
+        <label className="flex items-center gap-2 text-sm text-gray-700">
+          <input
+            type="checkbox"
+            checked={requiereAdjunto}
+            onChange={(e) => setRequiereAdjunto(e.target.checked)}
+          />
+          Exigir documento o foto de vuelta para cerrar
+        </label>
       )}
 
       <div className="flex flex-col gap-2">

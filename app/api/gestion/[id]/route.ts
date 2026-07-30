@@ -78,7 +78,7 @@ export async function PATCH(
 
   // --- Responder: solo solicitudes, solo el qf del local, desde pendiente ---
   if (body.accion === 'responder') {
-    if (fila.tipo !== 'solicitud') {
+    if (fila.tipo !== 'solicitud' && fila.tipo !== 'solicitud_simple') {
       return NextResponse.json(
         { error: 'Solo las solicitudes se responden' },
         { status: 400 }
@@ -97,16 +97,22 @@ export async function PATCH(
       )
     }
 
-    const { count: numAdjuntos } = await supabase
-      .from('adjuntos')
-      .select('id', { count: 'exact', head: true })
-      .eq('gestion_id', params.id)
+    const exigeAdjunto =
+      fila.tipo === 'solicitud' ||
+      (fila.tipo === 'solicitud_simple' && fila.requiere_adjunto === true)
 
-    if (!numAdjuntos || numAdjuntos === 0) {
-      return NextResponse.json(
-        { error: 'Debes adjuntar el documento antes de responder.' },
-        { status: 400 }
-      )
+    if (exigeAdjunto) {
+      const { count: numAdjuntos } = await supabase
+        .from('adjuntos')
+        .select('id', { count: 'exact', head: true })
+        .eq('gestion_id', params.id)
+
+      if (!numAdjuntos || numAdjuntos === 0) {
+        return NextResponse.json(
+          { error: 'Debes adjuntar el documento antes de responder.' },
+          { status: 400 }
+        )
+      }
     }
 
     const { error: errorUpdate } = await supabase

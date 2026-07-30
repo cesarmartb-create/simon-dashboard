@@ -5,7 +5,7 @@ import type { Rol, Usuario } from '@/types/usuario'
 import type { Gestion, TipoGestion } from '@/types/gestion'
 
 const ROLES_VALIDOS: Rol[] = ['admin', 'gestor', 'qf']
-const TIPOS_VALIDOS: TipoGestion[] = ['solicitud', 'memo', 'comunicado']
+const TIPOS_VALIDOS: TipoGestion[] = ['solicitud', 'solicitud_simple', 'memo', 'comunicado']
 
 interface PerfilActual {
   cliente_id: string | null
@@ -21,6 +21,7 @@ interface Body {
   instrucciones?: string
   fecha_limite?: string
   folio_externo?: string
+  requiere_adjunto?: boolean
 }
 
 interface LocalRow {
@@ -98,6 +99,8 @@ export async function POST(request: Request) {
   const fechaLimite = body.fecha_limite?.trim() || null
   const folioExterno =
     body.tipo === 'comunicado' ? body.folio_externo?.trim() || null : null
+  const requiereAdjunto =
+    body.tipo === 'solicitud_simple' ? Boolean(body.requiere_adjunto) : null
 
   // Resuelve el/los locales destino.
   let locales: LocalRow[] = []
@@ -151,6 +154,7 @@ export async function POST(request: Request) {
     estado: 'pendiente',
     fecha_limite: fechaLimite,
     folio_externo: folioExterno,
+    requiere_adjunto: requiereAdjunto,
   }))
 
   const { data: creadas, error: errorInsert } = await supabase

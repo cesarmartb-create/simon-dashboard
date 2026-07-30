@@ -1,9 +1,10 @@
 import { hoyChile } from '@/lib/utils'
 
-export type TipoGestion = 'solicitud' | 'memo' | 'comunicado'
+export type TipoGestion = 'solicitud' | 'solicitud_simple' | 'memo' | 'comunicado'
 
 export const TIPO_GESTION_LABEL: Record<TipoGestion, string> = {
-  solicitud: 'Solicitud',
+  solicitud: 'Documental',
+  solicitud_simple: 'Solicitudes',
   memo: 'Comunicado Interno',
   comunicado: 'Comunicado Simi',
 }
@@ -32,6 +33,7 @@ export interface Gestion {
   fecha_respuesta: string | null
   respondido_por: string | null
   folio_externo: string | null
+  requiere_adjunto: boolean | null
   created_at: string
   updated_at: string | null
 }
