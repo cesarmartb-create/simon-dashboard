@@ -13,7 +13,7 @@ import {
   puedeCrearRendicion,
   saldoDisponible,
 } from '@/lib/cajachica'
-import { formatCLP } from '@/lib/utils'
+import { formatCLP, comoArray } from '@/lib/utils'
 import {
   ESTADO_GASTO_LABEL,
   ESTADO_RENDICION_LABEL,
@@ -27,7 +27,7 @@ import {
 
 interface Props {
   searchParams: {
-    estado?: string
+    estado?: string | string[]
     periodo?: string
     local?: string
   }
@@ -61,6 +61,8 @@ export default async function CajaChicaPage({ searchParams }: Props) {
     .eq('cliente_id', clienteId)
     .maybeSingle<{ instrucciones_caja_chica: string | null }>()
 
+  const estadosSel = comoArray(searchParams.estado)
+
   let query = supabase
     .from('rendiciones_caja_chica')
     .select('*')
@@ -71,7 +73,7 @@ export default async function CajaChicaPage({ searchParams }: Props) {
   } else if (searchParams.local) {
     query = query.eq('local', searchParams.local)
   }
-  if (searchParams.estado) query = query.eq('estado', searchParams.estado)
+  if (estadosSel.length > 0) query = query.in('estado', estadosSel)
   if (searchParams.periodo) query = query.eq('periodo', searchParams.periodo)
 
   const { data: rows, error } = await query.order('created_at', {
