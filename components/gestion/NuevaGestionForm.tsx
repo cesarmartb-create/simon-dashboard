@@ -49,6 +49,10 @@ export default function NuevaGestionForm({ clienteId, locales }: Props) {
       setError('Debes seleccionar un local.')
       return
     }
+    if (!instrucciones.trim()) {
+      setError('Debes escribir las instrucciones o el contenido.')
+      return
+    }
     setGuardando(true)
     setError(null)
 
@@ -238,6 +242,7 @@ export default function NuevaGestionForm({ clienteId, locales }: Props) {
           value={instrucciones}
           onChange={(e) => setInstrucciones(e.target.value)}
           rows={5}
+          required
           placeholder="Describe la instruccion o el contenido…"
           className="px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent resize-none"
         />
