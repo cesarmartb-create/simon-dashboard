@@ -15,7 +15,7 @@ export const ADJUNTOS_TIPOS_MIME = [
 export const ADJUNTOS_ACCEPT =
   '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png'
 
-export type EntidadAdjunto = 'casos' | 'ajustes' | 'gastos' | 'rendiciones'
+export type EntidadAdjunto = 'casos' | 'ajustes' | 'gastos' | 'rendiciones' | 'gestion'
 
 export interface Adjunto {
   id: string
@@ -24,6 +24,7 @@ export interface Adjunto {
   ajuste_id: string | null
   gasto_id: string | null
   rendicion_id: string | null
+  gestion_id: string | null
   nombre_archivo: string
   ruta: string
   tamano_bytes: number

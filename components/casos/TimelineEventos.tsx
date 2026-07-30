@@ -1,8 +1,8 @@
-import type { Evento } from '@/types/caso'
+import type { EventoTimeline } from '@/types/caso'
 import { formatFechaHora } from '@/lib/utils'
 
 interface Props {
-  eventos: Evento[]
+  eventos: EventoTimeline[]
 }
 
 // Los 10 valores permitidos por el check eventos_tipo_check.

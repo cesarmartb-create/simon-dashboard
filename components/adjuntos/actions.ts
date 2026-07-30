@@ -128,7 +128,7 @@ export async function registrarAdjuntos(
       return { ok: false, error: 'No tienes acceso a este gasto.' }
     }
     clienteId = gasto.cliente_id
-  } else {
+  } else if (input.entidad === 'rendiciones') {
     // Comprobante de transferencia: adjunto a la rendicion.
     if (!puedeVerCajaChica(usuario)) {
       return { ok: false, error: 'No tienes acceso a esta rendicion.' }
@@ -145,6 +145,20 @@ export async function registrarAdjuntos(
       return { ok: false, error: 'No tienes acceso a esta rendicion.' }
     }
     clienteId = rendicion.cliente_id
+  } else {
+    // Adjunto de Gestion (documento original o respuesta).
+    const { data: fila } = await supabase
+      .from('gestion')
+      .select('id, cliente_id, local')
+      .eq('id', input.entidadId)
+      .maybeSingle<{ id: string; cliente_id: string; local: string }>()
+    if (!fila || fila.cliente_id !== clienteUsuario) {
+      return { ok: false, error: 'No tienes acceso a esta gestion.' }
+    }
+    if (usuario.rol === 'qf' && fila.local !== (usuario.local ?? '')) {
+      return { ok: false, error: 'No tienes acceso a esta gestion.' }
+    }
+    clienteId = fila.cliente_id
   }
 
   // La ruta debe pertenecer a este registro (evita inyeccion de rutas).
@@ -161,6 +175,7 @@ export async function registrarAdjuntos(
     ajuste_id: input.entidad === 'ajustes' ? input.entidadId : null,
     gasto_id: input.entidad === 'gastos' ? input.entidadId : null,
     rendicion_id: input.entidad === 'rendiciones' ? input.entidadId : null,
+    gestion_id: input.entidad === 'gestion' ? input.entidadId : null,
     nombre_archivo: a.nombre_archivo,
     ruta: a.ruta,
     tamano_bytes: a.tamano_bytes,

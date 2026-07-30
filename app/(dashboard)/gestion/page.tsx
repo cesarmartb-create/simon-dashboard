@@ -1,0 +1,83 @@
+import Link from 'next/link'
+import Header from '@/components/layout/Header'
+import GestionTabla from '@/components/gestion/GestionTabla'
+import FiltrosGestion from '@/components/gestion/FiltrosGestion'
+import { getUsuarioActual } from '@/lib/sesion'
+import { createClient } from '@/lib/supabase/server'
+import { puedeCrearGestion } from '@/lib/gestion'
+import { comoArray } from '@/lib/utils'
+import type { Gestion } from '@/types/gestion'
+
+interface Props {
+  searchParams: {
+    tipo?: string | string[]
+    estado?: string | string[]
+    local?: string | string[]
+  }
+}
+
+export default async function GestionPage({ searchParams }: Props) {
+  const usuario = await getUsuarioActual()
+  const supabase = createClient()
+
+  const tiposSel = comoArray(searchParams.tipo)
+  const estadosSel = comoArray(searchParams.estado)
+  const localesSel = comoArray(searchParams.local)
+
+  let query = supabase
+    .from('gestion')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  if (usuario.rol === 'qf') {
+    query = query.eq('local', usuario.local ?? '')
+  }
+  if (tiposSel.length > 0) query = query.in('tipo', tiposSel)
+  if (estadosSel.length > 0) query = query.in('estado', estadosSel)
+  if (localesSel.length > 0) query = query.in('local', localesSel)
+
+  const { data: filas, error } = await query
+
+  const { data: localesRows } = await supabase
+    .from('gestion')
+    .select('local')
+    .not('local', 'is', null)
+
+  const locales = Array.from(
+    new Set((localesRows ?? []).map((r) => r.local as string))
+  ).sort()
+
+  return (
+    <>
+      <Header usuario={usuario} titulo="Gestión" />
+      <main className="flex-1 p-8 overflow-y-auto">
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-900">Gestión</h2>
+            <p className="text-sm text-gray-500 mt-1">
+              {filas?.length ?? 0} gestión{filas?.length === 1 ? '' : 'es'}
+            </p>
+          </div>
+          {puedeCrearGestion(usuario.rol) && (
+            <Link
+              href="/gestion/nueva"
+              className="bg-accent hover:bg-accent-hover text-white text-sm font-medium px-4 py-2 transition-colors"
+            >
+              Nueva
+            </Link>
+          )}
+        </div>
+
+        <FiltrosGestion locales={locales} />
+
+        {error ? (
+          <div className="bg-red-50 border border-red-200 text-red-700 text-sm p-4">
+            Error cargando gestión: {error.message}
+          </div>
+        ) : (
+          <GestionTabla filas={(filas ?? []) as Gestion[]} />
+        )}
+      </main>
+    </>
+  )
+}

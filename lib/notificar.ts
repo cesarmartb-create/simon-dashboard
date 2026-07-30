@@ -1,9 +1,10 @@
 import { emailsPorRol, getUsuario } from '@/lib/auth'
-import { formatCLP } from '@/lib/utils'
+import { formatCLP, formatFecha } from '@/lib/utils'
 import {
   ESTADO_RENDICION_LABEL,
   type EstadoRendicion,
 } from '@/types/cajachica'
+import type { Gestion } from '@/types/gestion'
 
 const SIMON_URL = 'https://simon-62wy.onrender.com/notificar-colaborador'
 const SENDGRID_URL = 'https://api.sendgrid.com/v3/mail/send'
@@ -953,5 +954,179 @@ export async function notificarRecordatorioCajaChica(
     texto,
     html,
     contexto: 'recordatorio caja chica',
+  })
+}
+
+// --- Correos de Gestion ---
+
+function linkGestion(id: string): string {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  return `${baseUrl}/gestion/${id}`
+}
+
+function asuntoGestionCreada(fila: Gestion): string {
+  if (fila.tipo === 'solicitud') return `Nueva solicitud — ${fila.titulo}`
+  if (fila.tipo === 'memo') return `Nuevo memo — ${fila.titulo}`
+  return `Nuevo comunicado — ${fila.titulo}`
+}
+
+/**
+ * Notifica al local (correo del local + copia permanente) cuando se crea una
+ * gestion nueva (solicitud/memo/comunicado). Nunca lanza: cualquier error se
+ * loguea y se descarta para no bloquear la creacion.
+ */
+export async function notificarGestionCreada(fila: Gestion): Promise<void> {
+  const destinatarios = Array.from(
+    new Set(
+      [...COPIA_PERMANENTE, fila.local_correo].filter(
+        (e): e is string => typeof e === 'string' && e.includes('@')
+      )
+    )
+  )
+
+  const link = linkGestion(fila.id)
+  const subject = asuntoGestionCreada(fila)
+
+  const filas: [string, string][] = [
+    ['Local', fila.local],
+    ['Título', fila.titulo],
+  ]
+  if (fila.instrucciones) filas.push(['Instrucciones', fila.instrucciones])
+  if (fila.fecha_limite) filas.push(['Fecha límite', fila.fecha_limite])
+  if (fila.tipo === 'comunicado' && fila.folio_externo) {
+    filas.push(['Folio externo', fila.folio_externo])
+  }
+
+  const intro =
+    fila.tipo === 'solicitud'
+      ? 'Se te envió una solicitud que requiere respuesta con documento adjunto.'
+      : fila.tipo === 'memo'
+        ? 'Se te envió un memo. Marca como leído una vez revisado.'
+        : 'Se te envió un comunicado. Marca como leído una vez revisado.'
+
+  const texto = [
+    intro,
+    '',
+    ...filas.map(([k, v]) => `${k}: ${v}`),
+    '',
+    `Ver: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: subject,
+    headerColor: '#2563EB',
+    intro,
+    filas,
+    link,
+    linkTexto: 'Ver',
+  })
+
+  await enviarCorreoCaso({
+    destinatarios,
+    subject,
+    texto,
+    html,
+    contexto: 'gestion creada',
+  })
+}
+
+/**
+ * Notifica a quien creó la gestion cuando el local responde una solicitud.
+ * Nunca lanza: cualquier error se loguea y se descarta.
+ */
+export async function notificarGestionRespondida(fila: Gestion): Promise<void> {
+  const destinatarios = Array.from(
+    new Set(
+      [...COPIA_PERMANENTE, fila.creado_por].filter(
+        (e): e is string => typeof e === 'string' && e.includes('@')
+      )
+    )
+  )
+
+  const link = linkGestion(fila.id)
+  const respondidoPor = fila.respondido_por ? nombreYEmail(fila.respondido_por) : '—'
+
+  const filas: [string, string][] = [
+    ['Local', fila.local],
+    ['Título', fila.titulo],
+    ['Respondido por', respondidoPor],
+    ['Fecha respuesta', formatFecha(fila.fecha_respuesta)],
+  ]
+
+  const intro = 'Tu solicitud fue respondida.'
+  const texto = [
+    intro,
+    '',
+    ...filas.map(([k, v]) => `${k}: ${v}`),
+    '',
+    `Ver: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: 'Solicitud respondida',
+    headerColor: '#16a34a',
+    intro,
+    filas,
+    link,
+    linkTexto: 'Ver',
+  })
+
+  await enviarCorreoCaso({
+    destinatarios,
+    subject: `Solicitud respondida — ${fila.titulo}`,
+    texto,
+    html,
+    contexto: 'gestion respondida',
+  })
+}
+
+/**
+ * Notifica por correo a la contraparte cuando se agrega un comentario libre
+ * en una gestion (bitácora). Destinatarios: quien no escribió, entre local y
+ * quien creó. Nunca lanza: cualquier error se loguea y se descarta.
+ */
+export async function notificarComentarioGestion(
+  fila: Gestion,
+  comentario: string,
+  autorEmail: string,
+  destinatarios: string[]
+): Promise<void> {
+  const destinatariosFinal = Array.from(
+    new Set([...COPIA_PERMANENTE, ...destinatarios])
+  )
+
+  const link = linkGestion(fila.id)
+  const escritoPor = nombreYEmail(autorEmail)
+
+  const filas: [string, string][] = [
+    ['Local', fila.local],
+    ['Título', fila.titulo],
+    ['Comentario', comentario],
+    ['Escrito por', escritoPor],
+  ]
+
+  const texto = [
+    'Se agregó un nuevo comentario en una gestión.',
+    '',
+    ...filas.map(([k, v]) => `${k}: ${v}`),
+    '',
+    `Ver: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: 'Nuevo comentario en gestión',
+    headerColor: '#2563EB',
+    intro: 'Se agregó un nuevo comentario en una gestión.',
+    filas,
+    link,
+    linkTexto: 'Ver',
+  })
+
+  await enviarCorreoCaso({
+    destinatarios: destinatariosFinal,
+    subject: `Nuevo comentario en gestión — ${fila.titulo}`,
+    texto,
+    html,
+    contexto: 'comentario de gestion',
   })
 }

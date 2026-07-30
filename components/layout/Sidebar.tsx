@@ -20,6 +20,7 @@ const ITEMS: {
   { href: '/casos', label: 'Casos', visible: puedeVerCasos },
   { href: '/ajustes', label: 'Ajustes', visible: puedeVerAjustes },
   { href: '/caja-chica', label: 'Caja chica', visible: puedeVerCajaChica },
+  { href: '/gestion', label: 'Gestión', visible: () => true },
   { href: '/metricas', label: 'Métricas', visible: (u) => u.rol === 'admin' },
   { href: '/equipo', label: 'Equipo', visible: (u) => u.rol === 'admin' },
   {
