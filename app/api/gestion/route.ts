@@ -115,6 +115,10 @@ export async function POST(request: Request) {
       // Caja Chica (codigo 'OC...'); 'todos los locales' en Gestion es
       // solo para farmacias, nunca cajas personales.
       .not('codigo', 'ilike', 'OC%')
+      // FTEST es el local ficticio usado para pruebas de features; nunca
+      // debe recibir envios masivos reales (solo se usa como destino
+      // especifico, elegido a mano).
+      .neq('codigo', 'FTEST')
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
