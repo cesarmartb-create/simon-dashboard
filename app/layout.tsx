@@ -3,7 +3,7 @@ import './globals.css'
 
 export const metadata: Metadata = {
   title: 'Panel Simón',
-  description: 'Gestión de casos derivados por el bot Simón',
+  description: 'Comunicación y operación interna — Panel Simón',
 }
 
 export default function RootLayout({
