@@ -29,3 +29,4 @@ tsconfig.tsbuildinfo
 *.hoy
 *.docx
 *.pdf
+!public/manuales/*.pdf

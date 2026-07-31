@@ -29,6 +29,7 @@ const ITEMS: {
     label: 'Configuración',
     visible: (u) => u.rol === 'admin',
   },
+  { href: '/ayuda', label: 'Ayuda', visible: () => true },
 ]
 
 export default function Sidebar({ usuario }: Props) {
