@@ -42,6 +42,11 @@ export default function NuevaGestionForm({ clienteId, locales }: Props) {
     null
   )
 
+  // FTEST es el local ficticio usado para pruebas de features; nunca
+  // debe recibir envios masivos reales (solo se usa como destino
+  // especifico, elegido a mano).
+  const localesParaTodos = locales.filter((l) => l.codigo !== 'FTEST')
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!titulo.trim()) return
@@ -219,7 +224,7 @@ export default function NuevaGestionForm({ clienteId, locales }: Props) {
             onChange={() => setDestinoModo('todos')}
             className="accent-accent"
           />
-          Todos los locales ({locales.length})
+          Todos los locales ({localesParaTodos.length})
         </label>
       </div>
 
