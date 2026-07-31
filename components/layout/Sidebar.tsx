@@ -39,7 +39,7 @@ export default function Sidebar({ usuario }: Props) {
     <aside className="w-60 bg-sidebar text-white flex flex-col min-h-screen">
       <div className="px-6 py-6 border-b border-white/10">
         <div className="text-lg font-semibold tracking-tight">Panel Simón</div>
-        <div className="text-xs text-white/50 mt-1">Gestión de casos</div>
+        <div className="text-xs text-white/50 mt-1">Comunicación y operación interna</div>
       </div>
 
       <nav className="flex-1 px-3 py-4 space-y-1">
