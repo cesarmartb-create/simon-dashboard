@@ -244,7 +244,7 @@ export default function ColaboradoresTabla() {
 
     setConfirmando(false)
     if (err) {
-      setError(`No se pudo eliminar el colaborador: ${err.message}`)
+      setError(`No se pudo desactivar el colaborador: ${err.message}`)
       setEliminando(null)
       return
     }
@@ -453,7 +453,7 @@ export default function ColaboradoresTabla() {
                       onClick={() => setEliminando(f)}
                       className="text-red-600 text-xs font-medium hover:underline"
                     >
-                      Eliminar
+                      Desactivar
                     </button>
                   </td>
                 </tr>
@@ -465,7 +465,7 @@ export default function ColaboradoresTabla() {
 
       {eliminando && (
         <ConfirmDialog
-          mensaje={`¿Eliminar a ${eliminando.nombre}? Esta acción lo quitará del sistema.`}
+          mensaje={`¿Desactivar a ${eliminando.nombre}? Podras reactivarlo despues si vuelve a aparecer con el mismo numero de telefono.`}
           confirmando={confirmando}
           onCancel={() => setEliminando(null)}
           onConfirm={confirmarEliminar}
