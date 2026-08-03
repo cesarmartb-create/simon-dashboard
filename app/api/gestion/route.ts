@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { notificarGestionCreada } from '@/lib/notificar'
+import {
+  notificarGestionCreada,
+  notificarGestionMasivaCreada,
+} from '@/lib/notificar'
 import type { Rol, Usuario } from '@/types/usuario'
 import type { Gestion, TipoGestion } from '@/types/gestion'
 
@@ -106,10 +109,19 @@ export async function POST(request: Request) {
 
   // Resuelve el/los locales destino.
   let locales: LocalRow[] = []
+  let destinoEmpresaNombre: string | null = null
   const esMasivo = destino === 'todos' || destino === 'empresa'
   if (esMasivo) {
     if (destino === 'empresa' && !destinoEmpresaId) {
       return NextResponse.json({ error: 'Falta la empresa' }, { status: 400 })
+    }
+    if (destino === 'empresa') {
+      const { data: empresaData } = await supabase
+        .from('empresas')
+        .select('nombre')
+        .eq('id', destinoEmpresaId)
+        .maybeSingle<{ nombre: string }>()
+      destinoEmpresaNombre = empresaData?.nombre ?? null
     }
     let query = supabase
       .from('locales')
@@ -198,12 +210,26 @@ export async function POST(request: Request) {
         console.error('[gestion] Error insertando evento creado:', errorEvento)
       }
       try {
-        await notificarGestionCreada(fila)
+        await notificarGestionCreada(fila, !esMasivo)
       } catch {
         // el correo es best-effort
       }
     })
   )
+
+  if (esMasivo) {
+    try {
+      await notificarGestionMasivaCreada({
+        tipo: body.tipo,
+        titulo,
+        cantidadLocales: filasCreadas.length,
+        destinoDescripcion:
+          destino === 'todos' ? 'Todos los locales' : destinoEmpresaNombre ?? 'Empresa',
+      })
+    } catch (err) {
+      console.error('[gestion] Error notificando resumen masivo:', err)
+    }
+  }
 
   return NextResponse.json({
     ok: true,

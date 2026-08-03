@@ -4,7 +4,7 @@ import {
   ESTADO_RENDICION_LABEL,
   type EstadoRendicion,
 } from '@/types/cajachica'
-import type { Gestion } from '@/types/gestion'
+import { TIPO_GESTION_LABEL, type Gestion } from '@/types/gestion'
 
 const SIMON_URL = 'https://simon-62wy.onrender.com/notificar-colaborador'
 const SENDGRID_URL = 'https://api.sendgrid.com/v3/mail/send'
@@ -974,11 +974,19 @@ function asuntoGestionCreada(fila: Gestion): string {
  * Notifica al local (correo del local + copia permanente) cuando se crea una
  * gestion nueva (solicitud/memo/comunicado). Nunca lanza: cualquier error se
  * loguea y se descarta para no bloquear la creacion.
+ *
+ * En envios masivos, incluirCopiaPermanente debe ir en false: la copia
+ * permanente recibe un unico correo resumen (ver notificarGestionMasivaCreada)
+ * en vez de uno por cada local.
  */
-export async function notificarGestionCreada(fila: Gestion): Promise<void> {
+export async function notificarGestionCreada(
+  fila: Gestion,
+  incluirCopiaPermanente: boolean = true
+): Promise<void> {
+  const base = incluirCopiaPermanente ? [...COPIA_PERMANENTE] : []
   const destinatarios = Array.from(
     new Set(
-      [...COPIA_PERMANENTE, fila.local_correo].filter(
+      [...base, fila.local_correo].filter(
         (e): e is string => typeof e === 'string' && e.includes('@')
       )
     )
@@ -1027,6 +1035,47 @@ export async function notificarGestionCreada(fila: Gestion): Promise<void> {
     texto,
     html,
     contexto: 'gestion creada',
+  })
+}
+
+/**
+ * Notifica a la copia permanente con UN SOLO correo resumen cuando se crea un
+ * envio masivo de gestion (a todos los locales o por empresa), en vez de un
+ * correo por cada local. Nunca lanza: cualquier error se loguea y se descarta.
+ */
+export async function notificarGestionMasivaCreada(datos: {
+  tipo: Gestion['tipo']
+  titulo: string
+  cantidadLocales: number
+  destinoDescripcion: string
+}): Promise<void> {
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
+  const link = `${baseUrl}/gestion`
+  const subject = `Nuevo envío masivo: ${datos.titulo}`
+  const filas: [string, string][] = [
+    ['Tipo', TIPO_GESTION_LABEL[datos.tipo]],
+    ['Título', datos.titulo],
+    ['Destino', datos.destinoDescripcion],
+    ['Locales', String(datos.cantidadLocales)],
+  ]
+  const intro = `Se creó un envío masivo a ${datos.cantidadLocales} locales (${datos.destinoDescripcion}). Este correo resume el envío completo — no llegará uno por cada local.`
+  const texto = [intro, '', ...filas.map(([k, v]) => `${k}: ${v}`), '', `Ver: ${link}`].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: subject,
+    headerColor: '#2563EB',
+    intro,
+    filas,
+    link,
+    linkTexto: 'Ver en el panel',
+  })
+
+  await enviarCorreoCaso({
+    destinatarios: COPIA_PERMANENTE,
+    subject,
+    texto,
+    html,
+    contexto: 'gestion masiva creada',
   })
 }
 
