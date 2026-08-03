@@ -5,6 +5,7 @@ import Link from 'next/link'
 import type { Gestion } from '@/types/gestion'
 import { TIPO_GESTION_LABEL, ESTADO_GESTION_LABEL, esVencida } from '@/types/gestion'
 import type { Usuario } from '@/types/usuario'
+import { formatFecha } from '@/lib/utils'
 import GestionGrupoFila from './GestionGrupoFila'
 
 interface Props {
@@ -63,6 +64,7 @@ export default function GestionTabla({ filas, usuario }: Props) {
           <th className="px-4 py-2 font-medium">Título</th>
           <th className="px-4 py-2 font-medium">Local</th>
           <th className="px-4 py-2 font-medium">Estado</th>
+          <th className="px-4 py-2 font-medium">Enviado</th>
           <th className="px-4 py-2 font-medium">Fecha límite</th>
           <th className="px-4 py-2 font-medium"></th>
         </tr>
@@ -99,6 +101,7 @@ function FilaIndividual({ fila }: { fila: Gestion }) {
           </span>
         )}
       </td>
+      <td className="px-4 py-2">{formatFecha(fila.created_at)}</td>
       <td className="px-4 py-2">{fila.fecha_limite ?? '—'}</td>
       <td className="px-4 py-2">{fila.folio_externo ?? ''}</td>
     </tr>

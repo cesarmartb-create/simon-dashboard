@@ -11,7 +11,8 @@ import { TIPO_GESTION_LABEL, type TipoGestion } from '@/types/gestion'
 
 interface Props {
   clienteId: string
-  locales: { codigo: string; nombre: string }[]
+  locales: { codigo: string; nombre: string; empresa_id: string | null }[]
+  empresas: { id: string; nombre: string }[]
 }
 
 interface RespuestaCreacion {
@@ -23,15 +24,16 @@ interface RespuestaCreacion {
 
 const TIPOS: TipoGestion[] = ['solicitud', 'solicitud_simple', 'memo', 'comunicado']
 
-export default function NuevaGestionForm({ clienteId, locales }: Props) {
+export default function NuevaGestionForm({ clienteId, locales, empresas }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
   const [tipo, setTipo] = useState<TipoGestion>('solicitud')
   const [folioExterno, setFolioExterno] = useState('')
   const [requiereAdjunto, setRequiereAdjunto] = useState(true)
-  const [destinoModo, setDestinoModo] = useState<'local' | 'todos'>('local')
+  const [destinoModo, setDestinoModo] = useState<'local' | 'todos' | 'empresa'>('local')
   const [destinoCodigo, setDestinoCodigo] = useState(locales[0]?.codigo ?? '')
+  const [destinoEmpresaId, setDestinoEmpresaId] = useState(empresas[0]?.id ?? '')
   const [titulo, setTitulo] = useState('')
   const [instrucciones, setInstrucciones] = useState('')
   const [fechaLimite, setFechaLimite] = useState('')
@@ -47,11 +49,27 @@ export default function NuevaGestionForm({ clienteId, locales }: Props) {
   // especifico, elegido a mano).
   const localesParaTodos = locales.filter((l) => l.codigo !== 'FTEST')
 
+  // Empresas que tienen al menos un local activo real (mismo criterio de
+  // exclusion de FTEST que localesParaTodos: FTEST tiene empresa_id asignado
+  // a Farmaceutica Salazar por ser el local de pruebas, y no debe contarse
+  // ni ofrecerse en un envio real "por empresa").
+  const empresasConLocales = empresas
+    .map((e) => ({
+      ...e,
+      cantidad: locales.filter((l) => l.empresa_id === e.id && l.codigo !== 'FTEST')
+        .length,
+    }))
+    .filter((e) => e.cantidad > 0)
+
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!titulo.trim()) return
     if (destinoModo === 'local' && !destinoCodigo) {
       setError('Debes seleccionar un local.')
+      return
+    }
+    if (destinoModo === 'empresa' && !destinoEmpresaId) {
+      setError('Debes seleccionar una empresa.')
       return
     }
     if (!instrucciones.trim()) {
@@ -66,7 +84,13 @@ export default function NuevaGestionForm({ clienteId, locales }: Props) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         tipo,
-        destino: destinoModo === 'todos' ? 'todos' : destinoCodigo,
+        destino:
+          destinoModo === 'todos'
+            ? 'todos'
+            : destinoModo === 'empresa'
+              ? 'empresa'
+              : destinoCodigo,
+        destinoEmpresaId: destinoModo === 'empresa' ? destinoEmpresaId : undefined,
         titulo: titulo.trim(),
         instrucciones: instrucciones.trim() || undefined,
         fecha_limite: fechaLimite || undefined,
@@ -226,6 +250,33 @@ export default function NuevaGestionForm({ clienteId, locales }: Props) {
           />
           Todos los locales ({localesParaTodos.length})
         </label>
+
+        {empresasConLocales.length > 0 && (
+          <>
+            <label className="flex items-center gap-2 text-sm text-gray-700">
+              <input
+                type="radio"
+                checked={destinoModo === 'empresa'}
+                onChange={() => setDestinoModo('empresa')}
+                className="accent-accent"
+              />
+              Por empresa
+            </label>
+            {destinoModo === 'empresa' && (
+              <select
+                value={destinoEmpresaId}
+                onChange={(e) => setDestinoEmpresaId(e.target.value)}
+                className="ml-6 px-3 py-2 border border-gray-300 text-sm bg-white focus:outline-none focus:border-accent"
+              >
+                {empresasConLocales.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.nombre} ({e.cantidad})
+                  </option>
+                ))}
+              </select>
+            )}
+          </>
+        )}
       </div>
 
       <div className="flex flex-col">

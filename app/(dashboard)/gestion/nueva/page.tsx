@@ -14,7 +14,7 @@ export default async function NuevaGestionPage() {
 
   const { data } = await supabase
     .from('locales')
-    .select('codigo, nombre')
+    .select('codigo, nombre, empresa_id')
     .eq('cliente_id', clienteId)
     .eq('activo', true)
     // Excluye las cajas de oficina de Caja Chica (codigo 'OC...'): Gestion
@@ -24,11 +24,20 @@ export default async function NuevaGestionPage() {
 
   const locales = data ?? []
 
+  // Sin filtrar por si quedan con 0 locales: eso lo resuelve el formulario,
+  // cruzando con la lista de locales ya cargada.
+  const { data: empresasData } = await supabase
+    .from('empresas')
+    .select('id, nombre')
+    .eq('cliente_id', clienteId)
+
+  const empresas = empresasData ?? []
+
   return (
     <>
       <Header usuario={usuario} titulo="Nueva gestión" />
       <main className="flex-1 p-8 overflow-y-auto">
-        <NuevaGestionForm clienteId={clienteId} locales={locales} />
+        <NuevaGestionForm clienteId={clienteId} locales={locales} empresas={empresas} />
       </main>
     </>
   )

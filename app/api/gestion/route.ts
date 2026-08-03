@@ -16,7 +16,8 @@ interface PerfilActual {
 
 interface Body {
   tipo?: TipoGestion
-  destino?: string // 'todos' o el codigo de un local puntual
+  destino?: string // 'todos', 'empresa' o el codigo de un local puntual
+  destinoEmpresaId?: string
   titulo?: string
   instrucciones?: string
   fecha_limite?: string
@@ -96,6 +97,7 @@ export async function POST(request: Request) {
       { status: 400 }
     )
   }
+  const destinoEmpresaId = (body.destinoEmpresaId ?? '').trim() || null
   const fechaLimite = body.fecha_limite?.trim() || null
   const folioExterno =
     body.tipo === 'comunicado' ? body.folio_externo?.trim() || null : null
@@ -104,9 +106,12 @@ export async function POST(request: Request) {
 
   // Resuelve el/los locales destino.
   let locales: LocalRow[] = []
-  const esMasivo = destino === 'todos'
+  const esMasivo = destino === 'todos' || destino === 'empresa'
   if (esMasivo) {
-    const { data, error } = await supabase
+    if (destino === 'empresa' && !destinoEmpresaId) {
+      return NextResponse.json({ error: 'Falta la empresa' }, { status: 400 })
+    }
+    let query = supabase
       .from('locales')
       .select('codigo, nombre, correo')
       .eq('cliente_id', clienteId)
@@ -119,6 +124,10 @@ export async function POST(request: Request) {
       // debe recibir envios masivos reales (solo se usa como destino
       // especifico, elegido a mano).
       .neq('codigo', 'FTEST')
+    if (destino === 'empresa') {
+      query = query.eq('empresa_id', destinoEmpresaId)
+    }
+    const { data, error } = await query
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }

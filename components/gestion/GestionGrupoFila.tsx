@@ -7,6 +7,7 @@ import type { Gestion } from '@/types/gestion'
 import { TIPO_GESTION_LABEL, ESTADO_GESTION_LABEL, esVencida } from '@/types/gestion'
 import type { Usuario } from '@/types/usuario'
 import { puedeAnularGestion } from '@/lib/gestion'
+import { formatFecha } from '@/lib/utils'
 
 interface Props {
   filas: Gestion[]
@@ -67,6 +68,7 @@ export default function GestionGrupoFila({ filas, usuario }: Props) {
             </span>
           )}
         </td>
+        <td className="px-4 py-2">{formatFecha(primera.created_at)}</td>
         <td className="px-4 py-2">{primera.fecha_limite ?? '—'}</td>
         <td className="px-4 py-2">
           <div className="flex items-center gap-3">
@@ -135,7 +137,7 @@ export default function GestionGrupoFila({ filas, usuario }: Props) {
                 </span>
               )}
             </td>
-            <td className="px-4 py-2" colSpan={2} />
+            <td className="px-4 py-2" colSpan={3} />
           </tr>
         ))}
     </>
