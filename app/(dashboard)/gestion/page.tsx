@@ -33,7 +33,11 @@ export default async function GestionPage({ searchParams }: Props) {
     query = query.eq('local', usuario.local ?? '')
   }
   if (tiposSel.length > 0) query = query.in('tipo', tiposSel)
-  if (estadosSel.length > 0) query = query.in('estado', estadosSel)
+  if (estadosSel.length > 0) {
+    query = query.in('estado', estadosSel)
+  } else {
+    query = query.neq('estado', 'anulada')
+  }
   if (localesSel.length > 0) query = query.in('local', localesSel)
 
   const { data: filas, error } = await query
@@ -75,7 +79,7 @@ export default async function GestionPage({ searchParams }: Props) {
             Error cargando gestión: {error.message}
           </div>
         ) : (
-          <GestionTabla filas={(filas ?? []) as Gestion[]} />
+          <GestionTabla filas={(filas ?? []) as Gestion[]} usuario={usuario} />
         )}
       </main>
     </>

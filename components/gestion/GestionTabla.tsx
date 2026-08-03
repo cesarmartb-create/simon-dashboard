@@ -4,10 +4,12 @@ import { useMemo } from 'react'
 import Link from 'next/link'
 import type { Gestion } from '@/types/gestion'
 import { TIPO_GESTION_LABEL, ESTADO_GESTION_LABEL, esVencida } from '@/types/gestion'
+import type { Usuario } from '@/types/usuario'
 import GestionGrupoFila from './GestionGrupoFila'
 
 interface Props {
   filas: Gestion[]
+  usuario: Usuario
 }
 
 interface Item {
@@ -16,7 +18,7 @@ interface Item {
   grupo?: Gestion[]
 }
 
-export default function GestionTabla({ filas }: Props) {
+export default function GestionTabla({ filas, usuario }: Props) {
   const items = useMemo<Item[]>(() => {
     const grupos = new Map<string, Gestion[]>()
     const individuales: Gestion[] = []
@@ -68,7 +70,7 @@ export default function GestionTabla({ filas }: Props) {
       <tbody>
         {items.map((item) =>
           item.grupo ? (
-            <GestionGrupoFila key={item.key} filas={item.grupo} />
+            <GestionGrupoFila key={item.key} filas={item.grupo} usuario={usuario} />
           ) : (
             <FilaIndividual key={item.key} fila={item.individual!} />
           )
