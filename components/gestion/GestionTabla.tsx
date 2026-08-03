@@ -11,6 +11,7 @@ import GestionGrupoFila from './GestionGrupoFila'
 interface Props {
   filas: Gestion[]
   usuario: Usuario
+  totalesPorGrupo?: Record<string, { total: number; completadas: number }>
 }
 
 interface Item {
@@ -19,7 +20,7 @@ interface Item {
   grupo?: Gestion[]
 }
 
-export default function GestionTabla({ filas, usuario }: Props) {
+export default function GestionTabla({ filas, usuario, totalesPorGrupo }: Props) {
   const items = useMemo<Item[]>(() => {
     const grupos = new Map<string, Gestion[]>()
     const individuales: Gestion[] = []
@@ -72,7 +73,12 @@ export default function GestionTabla({ filas, usuario }: Props) {
       <tbody>
         {items.map((item) =>
           item.grupo ? (
-            <GestionGrupoFila key={item.key} filas={item.grupo} usuario={usuario} />
+            <GestionGrupoFila
+              key={item.key}
+              filas={item.grupo}
+              usuario={usuario}
+              totalesPorGrupo={totalesPorGrupo}
+            />
           ) : (
             <FilaIndividual key={item.key} fila={item.individual!} />
           )

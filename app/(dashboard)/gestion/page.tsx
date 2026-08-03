@@ -51,6 +51,35 @@ export default async function GestionPage({ searchParams }: Props) {
     new Set((localesRows ?? []).map((r) => r.local as string))
   ).sort()
 
+  const gruposIds = Array.from(
+    new Set(
+      (filas ?? [])
+        .map((f) => f.grupo_id)
+        .filter((id): id is string => Boolean(id))
+    )
+  )
+
+  const totalesPorGrupo: Record<string, { total: number; completadas: number }> = {}
+
+  if (gruposIds.length > 0) {
+    const { data: filasGrupos } = await supabase
+      .from('gestion')
+      .select('grupo_id, estado')
+      .in('grupo_id', gruposIds)
+      .neq('estado', 'anulada')
+
+    for (const f of filasGrupos ?? []) {
+      const grupoId = f.grupo_id as string
+      if (!totalesPorGrupo[grupoId]) {
+        totalesPorGrupo[grupoId] = { total: 0, completadas: 0 }
+      }
+      totalesPorGrupo[grupoId].total += 1
+      if (f.estado === 'leida' || f.estado === 'respondida') {
+        totalesPorGrupo[grupoId].completadas += 1
+      }
+    }
+  }
+
   return (
     <>
       <Header usuario={usuario} titulo="Gestión" />
@@ -79,7 +108,11 @@ export default async function GestionPage({ searchParams }: Props) {
             Error cargando gestión: {error.message}
           </div>
         ) : (
-          <GestionTabla filas={(filas ?? []) as Gestion[]} usuario={usuario} />
+          <GestionTabla
+            filas={(filas ?? []) as Gestion[]}
+            usuario={usuario}
+            totalesPorGrupo={totalesPorGrupo}
+          />
         )}
       </main>
     </>

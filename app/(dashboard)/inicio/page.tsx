@@ -92,7 +92,7 @@ export default async function InicioPage() {
           )}
 
           <TarjetaModulo
-            href="/gestion?estado=pendiente"
+            href="/gestion"
             titulo="Gestión"
             numero={resumenGestion.pendientes}
             etiqueta="pendientes"

@@ -12,6 +12,7 @@ import { formatFecha } from '@/lib/utils'
 interface Props {
   filas: Gestion[]
   usuario: Usuario
+  totalesPorGrupo?: Record<string, { total: number; completadas: number }>
 }
 
 function respondioOLeyo(fila: Gestion): boolean {
@@ -19,7 +20,7 @@ function respondioOLeyo(fila: Gestion): boolean {
 }
 
 /** Fila resumen para un envio masivo (mismo grupo_id): progreso + detalle expandible por local. */
-export default function GestionGrupoFila({ filas, usuario }: Props) {
+export default function GestionGrupoFila({ filas, usuario, totalesPorGrupo }: Props) {
   const router = useRouter()
   const [abierto, setAbierto] = useState(false)
   const [confirmarAnular, setConfirmarAnular] = useState(false)
@@ -27,8 +28,9 @@ export default function GestionGrupoFila({ filas, usuario }: Props) {
   const [error, setError] = useState<string | null>(null)
 
   const primera = filas[0]
-  const total = filas.length
-  const completados = filas.filter(respondioOLeyo).length
+  const totalReal = primera.grupo_id ? totalesPorGrupo?.[primera.grupo_id] : undefined
+  const total = totalReal?.total ?? filas.length
+  const completados = totalReal?.completadas ?? filas.filter(respondioOLeyo).length
   const verbo = primera.tipo === 'solicitud' ? 'respondieron' : 'leyeron'
   const algunaVencida = filas.some((f) => esVencida(f))
   const grupoAnulado = filas.every((f) => f.estado === 'anulada')
