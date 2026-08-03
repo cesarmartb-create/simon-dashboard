@@ -94,9 +94,10 @@ export default async function InicioPage() {
           <TarjetaModulo
             href="/gestion"
             titulo="Gestión"
-            numero={resumenGestion.pendientes}
-            etiqueta="pendientes"
+            numero={resumenGestion.envios}
+            etiqueta="envíos pendientes"
             desglose={[
+              { etiqueta: 'locales pendientes', cantidad: resumenGestion.pendientes, color: 'gray' },
               { etiqueta: 'Documental', cantidad: resumenGestion.documental, color: 'gray' },
               { etiqueta: 'Solicitudes', cantidad: resumenGestion.solicitudes, color: 'gray' },
               { etiqueta: 'Comunicado Interno', cantidad: resumenGestion.comunicadoInterno, color: 'gray' },

@@ -30,6 +30,7 @@ export interface ResumenGestion {
   solicitudes: number
   comunicadoInterno: number
   comunicadoSimi: number
+  envios: number
 }
 
 export async function cargarResumenCasos(
@@ -169,6 +170,17 @@ export async function cargarResumenGestion(
       .eq('tipo', 'comunicado'),
   ])
 
+  const { data: filasGrupo } = await supabase
+    .from('gestion')
+    .select('grupo_id')
+    .eq('estado', 'pendiente')
+
+  const gruposUnicos = new Set(
+    (filasGrupo ?? []).map((f) => f.grupo_id).filter((g): g is string => g !== null)
+  )
+  const individuales = (filasGrupo ?? []).filter((f) => f.grupo_id === null).length
+  const envios = gruposUnicos.size + individuales
+
   return {
     pendientes: pendientes ?? 0,
     vencidas: vencidas ?? 0,
@@ -176,5 +188,6 @@ export async function cargarResumenGestion(
     solicitudes: solicitudes ?? 0,
     comunicadoInterno: comunicadoInterno ?? 0,
     comunicadoSimi: comunicadoSimi ?? 0,
+    envios,
   }
 }
