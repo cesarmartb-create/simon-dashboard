@@ -96,6 +96,12 @@ export default async function InicioPage() {
             titulo="Gestión"
             numero={resumenGestion.pendientes}
             etiqueta="pendientes"
+            desglose={[
+              { etiqueta: 'Documental', cantidad: resumenGestion.documental, color: 'gray' },
+              { etiqueta: 'Solicitudes', cantidad: resumenGestion.solicitudes, color: 'gray' },
+              { etiqueta: 'Comunicado Interno', cantidad: resumenGestion.comunicadoInterno, color: 'gray' },
+              { etiqueta: 'Comunicado Simi', cantidad: resumenGestion.comunicadoSimi, color: 'gray' },
+            ]}
             badge={
               resumenGestion.vencidas > 0
                 ? `${resumenGestion.vencidas} vencidas`

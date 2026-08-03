@@ -26,6 +26,10 @@ export interface ResumenCajaChica {
 export interface ResumenGestion {
   pendientes: number
   vencidas: number
+  documental: number
+  solicitudes: number
+  comunicadoInterno: number
+  comunicadoSimi: number
 }
 
 export async function cargarResumenCasos(
@@ -125,7 +129,14 @@ export async function cargarResumenCajaChica(
 export async function cargarResumenGestion(
   supabase: SupabaseClient
 ): Promise<ResumenGestion> {
-  const [{ count: pendientes }, { count: vencidas }] = await Promise.all([
+  const [
+    { count: pendientes },
+    { count: vencidas },
+    { count: documental },
+    { count: solicitudes },
+    { count: comunicadoInterno },
+    { count: comunicadoSimi },
+  ] = await Promise.all([
     supabase
       .from('gestion')
       .select('id', { count: 'exact', head: true })
@@ -136,10 +147,34 @@ export async function cargarResumenGestion(
       .eq('estado', 'pendiente')
       .not('fecha_limite', 'is', null)
       .lt('fecha_limite', hoyChile()),
+    supabase
+      .from('gestion')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'pendiente')
+      .eq('tipo', 'solicitud'),
+    supabase
+      .from('gestion')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'pendiente')
+      .eq('tipo', 'solicitud_simple'),
+    supabase
+      .from('gestion')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'pendiente')
+      .eq('tipo', 'memo'),
+    supabase
+      .from('gestion')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'pendiente')
+      .eq('tipo', 'comunicado'),
   ])
 
   return {
     pendientes: pendientes ?? 0,
     vencidas: vencidas ?? 0,
+    documental: documental ?? 0,
+    solicitudes: solicitudes ?? 0,
+    comunicadoInterno: comunicadoInterno ?? 0,
+    comunicadoSimi: comunicadoSimi ?? 0,
   }
 }
