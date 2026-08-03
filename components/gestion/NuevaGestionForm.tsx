@@ -76,6 +76,10 @@ export default function NuevaGestionForm({ clienteId, locales, empresas }: Props
       setError('Debes escribir las instrucciones o el contenido.')
       return
     }
+    if (tipo === 'comunicado' && documento.length === 0) {
+      setError('Debes adjuntar el documento del comunicado.')
+      return
+    }
     setGuardando(true)
     setError(null)
 
@@ -109,10 +113,10 @@ export default function NuevaGestionForm({ clienteId, locales, empresas }: Props
 
     const data = (await res.json()) as RespuestaCreacion
 
-    // Documento original (solo solicitud): cada fila tiene su propio
+    // Documento (cualquier tipo): cada fila tiene su propio
     // gestion_id/ruta en Storage, asi que se sube una vez por fila creada.
     const fallidos: string[] = []
-    if (tipo === 'solicitud' && documento.length > 0) {
+    if (documento.length > 0) {
       for (const id of data.ids) {
         const r = await subirAdjuntos(supabase, {
           clienteId,
@@ -316,14 +320,16 @@ export default function NuevaGestionForm({ clienteId, locales, empresas }: Props
         />
       </div>
 
-      {tipo === 'solicitud' && (
-        <AdjuntosInput
-          archivos={documento}
-          onChange={setDocumento}
-          disabled={guardando}
-          label="Documento original (opcional)"
-        />
-      )}
+      <AdjuntosInput
+        archivos={documento}
+        onChange={setDocumento}
+        disabled={guardando}
+        label={
+          tipo === 'comunicado'
+            ? 'Documento (obligatorio)'
+            : 'Documento (opcional)'
+        }
+      />
 
       {error && (
         <div className="text-sm text-red-700 bg-red-50 border border-red-200 px-3 py-2">
