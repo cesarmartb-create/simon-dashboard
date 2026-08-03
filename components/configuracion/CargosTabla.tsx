@@ -229,7 +229,7 @@ export default function CargosTabla() {
                       onClick={() => setEliminando(f)}
                       className="text-red-600 text-xs font-medium hover:underline"
                     >
-                      Eliminar
+                      Desactivar
                     </button>
                   </td>
                 </tr>
@@ -241,7 +241,7 @@ export default function CargosTabla() {
 
       {eliminando && (
         <ConfirmDialog
-          mensaje={`¿Eliminar el cargo ${eliminando.nombre}? Esta acción lo quitará del sistema.`}
+          mensaje={`¿Desactivar el cargo ${eliminando.nombre}? Podrás reactivarlo después si vuelve a usarse.`}
           confirmando={confirmando}
           onCancel={() => setEliminando(null)}
           onConfirm={confirmarEliminar}

@@ -341,7 +341,7 @@ export default function CatalogoTabla({
                       onClick={() => setEliminando(f)}
                       className="text-red-600 text-xs font-medium hover:underline"
                     >
-                      Eliminar
+                      Desactivar
                     </button>
                   </td>
                 </tr>

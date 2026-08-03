@@ -325,7 +325,7 @@ export default function DerivacionesTabla() {
                       onClick={() => setEliminando(f)}
                       className="text-red-600 text-xs font-medium hover:underline"
                     >
-                      Eliminar
+                      Desactivar
                     </button>
                   </td>
                 </tr>
@@ -337,7 +337,7 @@ export default function DerivacionesTabla() {
 
       {eliminando && (
         <ConfirmDialog
-          mensaje={`¿Eliminar el área ${eliminando.nombre}? Esta acción la quitará del sistema.`}
+          mensaje={`¿Desactivar el área ${eliminando.nombre}? Podrás reactivarla después si vuelve a usarse.`}
           confirmando={confirmando}
           onCancel={() => setEliminando(null)}
           onConfirm={confirmarEliminar}
