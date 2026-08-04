@@ -34,6 +34,7 @@ export interface Gestion {
   respondido_por: string | null
   folio_externo: string | null
   requiere_adjunto: boolean | null
+  ultimo_recordatorio: string | null
   created_at: string
   updated_at: string | null
 }
