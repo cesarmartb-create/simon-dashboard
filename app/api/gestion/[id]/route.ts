@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
-import { puedeResponderGestion, puedeAnularGestion } from '@/lib/gestion'
-import { notificarGestionRespondida } from '@/lib/notificar'
+import {
+  puedeResponderGestion,
+  puedeAnularGestion,
+  puedeReenviarRecordatorio,
+} from '@/lib/gestion'
+import { notificarGestionRespondida, notificarRecordatorioGestion } from '@/lib/notificar'
+import { hoyChile } from '@/lib/utils'
 import type { Rol, Usuario } from '@/types/usuario'
-import type { Gestion } from '@/types/gestion'
+import { esVencida, type Gestion } from '@/types/gestion'
 
 const ROLES_VALIDOS: Rol[] = ['admin', 'gestor', 'qf']
 
@@ -15,7 +20,7 @@ interface PerfilActual {
 }
 
 interface Body {
-  accion?: 'responder' | 'marcar_leida' | 'anular'
+  accion?: 'responder' | 'marcar_leida' | 'anular' | 'reenviar_recordatorio'
 }
 
 export async function PATCH(
@@ -57,7 +62,8 @@ export async function PATCH(
   if (
     body.accion !== 'responder' &&
     body.accion !== 'marcar_leida' &&
-    body.accion !== 'anular'
+    body.accion !== 'anular' &&
+    body.accion !== 'reenviar_recordatorio'
   ) {
     return NextResponse.json({ error: 'Acción inválida' }, { status: 400 })
   }
@@ -75,6 +81,82 @@ export async function PATCH(
   }
 
   const ahora = new Date().toISOString()
+
+  // --- Reenviar recordatorio: admin o gestor, cualquier local, plazo cumplido o vencido ---
+  if (body.accion === 'reenviar_recordatorio') {
+    // La RLS de gestion_update SI permite al qf sobre su propio local, asi
+    // que este 403 es la unica barrera real.
+    if (!puedeReenviarRecordatorio(usuario)) {
+      return NextResponse.json(
+        { error: 'No tienes permiso para reenviar el aviso' },
+        { status: 403 }
+      )
+    }
+
+    const plazoCumplidoOVencido =
+      fila.fecha_limite !== null &&
+      (esVencida(fila) || fila.fecha_limite === hoyChile())
+    if (fila.estado !== 'pendiente' || !plazoCumplidoOVencido) {
+      return NextResponse.json(
+        {
+          error:
+            'Solo se puede reenviar el aviso de una gestión pendiente con plazo cumplido o vencido',
+        },
+        { status: 400 }
+      )
+    }
+
+    let correo = fila.local_correo
+    if (!correo || !correo.includes('@')) {
+      const codigo = fila.local.split(' — ')[0].trim()
+      const { data: localData } = await supabase
+        .from('locales')
+        .select('correo')
+        .eq('cliente_id', fila.cliente_id)
+        .eq('codigo', codigo)
+        .maybeSingle<{ correo: string | null }>()
+      correo = localData?.correo ?? null
+    }
+    if (!correo || !correo.includes('@')) {
+      return NextResponse.json(
+        { error: 'El local no tiene correo configurado' },
+        { status: 400 }
+      )
+    }
+
+    const ok = await notificarRecordatorioGestion({
+      localCorreo: correo,
+      local: fila.local,
+      gestiones: [fila],
+    })
+    if (!ok) {
+      return NextResponse.json(
+        { error: 'No se pudo enviar el correo' },
+        { status: 502 }
+      )
+    }
+
+    const { error: errorUpdate } = await supabase
+      .from('gestion')
+      .update({ ultimo_recordatorio: ahora })
+      .eq('id', params.id)
+    if (errorUpdate) {
+      return NextResponse.json({ error: errorUpdate.message }, { status: 500 })
+    }
+
+    const { error: errorEvento } = await supabase.from('eventos').insert({
+      gestion_id: params.id,
+      tipo: 'recordatorio',
+      actor: usuario.email,
+      fecha: ahora,
+      detalle: `Aviso reenviado a ${correo}`,
+    })
+    if (errorEvento) {
+      console.error('[gestion] Error insertando evento recordatorio:', errorEvento)
+    }
+
+    return NextResponse.json({ ok: true })
+  }
 
   // --- Responder: solo solicitudes, solo el qf del local, desde pendiente ---
   if (body.accion === 'responder') {
