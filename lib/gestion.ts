@@ -15,3 +15,8 @@ export function puedeResponderGestion(usuario: Usuario, fila: Gestion): boolean 
 export function puedeAnularGestion(usuario: Usuario): boolean {
   return usuario.rol === 'admin' || usuario.rol === 'gestor'
 }
+
+/** Reenvia el aviso de plazo al local: admin o gestor, en cualquier local. */
+export function puedeReenviarRecordatorio(usuario: Usuario): boolean {
+  return usuario.rol === 'admin' || usuario.rol === 'gestor'
+}
