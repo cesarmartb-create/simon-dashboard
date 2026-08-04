@@ -1222,7 +1222,7 @@ export async function notificarRecordatorioGestion(datos: {
         ? 'Sin plazo'
         : g.fecha_limite === hoy
           ? 'Vence hoy'
-          : `Vencio el ${formatFechaLimite(g.fecha_limite)}`
+          : `Venció el ${formatFechaLimite(g.fecha_limite)}`
     return [etiqueta, valor]
   })
 
