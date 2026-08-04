@@ -1,5 +1,5 @@
 import { emailsPorRol, getUsuario } from '@/lib/auth'
-import { formatCLP, formatFecha } from '@/lib/utils'
+import { formatCLP, formatFecha, hoyChile } from '@/lib/utils'
 import {
   ESTADO_RENDICION_LABEL,
   type EstadoRendicion,
@@ -162,20 +162,20 @@ async function enviarCorreoCaso(opts: {
   texto: string
   html: string
   contexto: string
-}): Promise<void> {
+}): Promise<boolean> {
   const apiKey = process.env.SENDGRID_API_KEY
   const from = process.env.EMAIL_FROM
   if (!apiKey || !from) {
     console.error(
       `[notificar] SENDGRID_API_KEY o EMAIL_FROM no configurados; se omite el correo de ${opts.contexto}`
     )
-    return
+    return false
   }
   if (opts.destinatarios.length === 0) {
     console.error(
       `[notificar] No hay destinatarios para el correo de ${opts.contexto}`
     )
-    return
+    return false
   }
 
   try {
@@ -204,10 +204,14 @@ async function enviarCorreoCaso(opts: {
       console.error(
         `[notificar] SendGrid respondió ${res.status} (${opts.contexto}): ${detalle}`
       )
+      return false
     }
   } catch (err) {
     console.error(`[notificar] Error enviando correo de ${opts.contexto}:`, err)
+    return false
   }
+
+  return true
 }
 
 /**
@@ -959,6 +963,12 @@ export async function notificarRecordatorioCajaChica(
 
 // --- Correos de Gestion ---
 
+/** fecha es 'YYYY-MM-DD' pura; manipulacion de string para no correrse un dia por timezone. */
+function formatFechaLimite(fecha: string): string {
+  const [a, m, d] = fecha.split('-')
+  return `${d}-${m}-${a}`
+}
+
 function linkGestion(id: string): string {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL ?? ''
   return `${baseUrl}/gestion/${id}`
@@ -1177,5 +1187,69 @@ export async function notificarComentarioGestion(
     texto,
     html,
     contexto: 'comentario de gestion',
+  })
+}
+
+/**
+ * Notifica al local que tiene gestiones con plazo cumplido o vencido.
+ * Destinatarios: solo el correo del local (sin copia permanente). Nunca
+ * lanza: cualquier error se loguea y se descarta; retorna si el envio tuvo exito.
+ */
+export async function notificarRecordatorioGestion(datos: {
+  localCorreo: string
+  local: string
+  gestiones: Gestion[]
+}): Promise<boolean> {
+  const destinatarios = [datos.localCorreo]
+
+  const hoy = hoyChile()
+  const hayAtrasadas = datos.gestiones.some(
+    (g) => g.fecha_limite !== null && g.fecha_limite < hoy
+  )
+
+  const subject = hayAtrasadas
+    ? `Gestiones con plazo vencido — ${datos.local}`
+    : `Hoy es el último día para responder — ${datos.local}`
+
+  const intro = hayAtrasadas
+    ? 'Estas gestiones tienen el plazo vencido y siguen pendientes de respuesta.'
+    : 'Hoy es el último día para responder estas gestiones.'
+
+  const filas: [string, string][] = datos.gestiones.map((g) => {
+    const etiqueta = `${TIPO_GESTION_LABEL[g.tipo]} — ${g.titulo}`
+    const valor =
+      g.fecha_limite === null
+        ? 'Sin plazo'
+        : g.fecha_limite === hoy
+          ? 'Vence hoy'
+          : `Vencio el ${formatFechaLimite(g.fecha_limite)}`
+    return [etiqueta, valor]
+  })
+
+  const link = `${process.env.NEXT_PUBLIC_APP_URL ?? ''}/gestion`
+
+  const texto = [
+    intro,
+    '',
+    ...filas.map(([k, v]) => `${k}: ${v}`),
+    '',
+    `Ir a Gestión: ${link}`,
+  ].join('\n')
+
+  const html = construirHtmlCaso({
+    titulo: subject,
+    headerColor: '#B45309',
+    intro,
+    filas,
+    link,
+    linkTexto: 'Ir a Gestión',
+  })
+
+  return await enviarCorreoCaso({
+    destinatarios,
+    subject,
+    texto,
+    html,
+    contexto: 'recordatorio gestion',
   })
 }
