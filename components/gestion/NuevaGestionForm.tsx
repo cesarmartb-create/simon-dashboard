@@ -28,22 +28,6 @@ export default function NuevaGestionForm({ clienteId, locales, empresas }: Props
   const router = useRouter()
   const supabase = createClient()
 
-  const [tipo, setTipo] = useState<TipoGestion>('solicitud')
-  const [folioExterno, setFolioExterno] = useState('')
-  const [requiereAdjunto, setRequiereAdjunto] = useState(true)
-  const [destinoModo, setDestinoModo] = useState<'local' | 'todos' | 'empresa'>('local')
-  const [destinoCodigo, setDestinoCodigo] = useState(locales[0]?.codigo ?? '')
-  const [destinoEmpresaId, setDestinoEmpresaId] = useState(empresas[0]?.id ?? '')
-  const [titulo, setTitulo] = useState('')
-  const [instrucciones, setInstrucciones] = useState('')
-  const [fechaLimite, setFechaLimite] = useState('')
-  const [documento, setDocumento] = useState<File[]>([])
-  const [guardando, setGuardando] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [creado, setCreado] = useState<{ ids: string[]; aviso: string | null } | null>(
-    null
-  )
-
   // FTEST es el local ficticio usado para pruebas de features; nunca
   // debe recibir envios masivos reales (solo se usa como destino
   // especifico, elegido a mano).
@@ -60,6 +44,24 @@ export default function NuevaGestionForm({ clienteId, locales, empresas }: Props
         .length,
     }))
     .filter((e) => e.cantidad > 0)
+
+  const [tipo, setTipo] = useState<TipoGestion>('solicitud')
+  const [folioExterno, setFolioExterno] = useState('')
+  const [requiereAdjunto, setRequiereAdjunto] = useState(true)
+  const [destinoModo, setDestinoModo] = useState<'local' | 'todos' | 'empresa'>('local')
+  const [destinoCodigo, setDestinoCodigo] = useState(locales[0]?.codigo ?? '')
+  const [destinoEmpresaId, setDestinoEmpresaId] = useState(
+    empresasConLocales[0]?.id ?? ''
+  )
+  const [titulo, setTitulo] = useState('')
+  const [instrucciones, setInstrucciones] = useState('')
+  const [fechaLimite, setFechaLimite] = useState('')
+  const [documento, setDocumento] = useState<File[]>([])
+  const [guardando, setGuardando] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [creado, setCreado] = useState<{ ids: string[]; aviso: string | null } | null>(
+    null
+  )
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
